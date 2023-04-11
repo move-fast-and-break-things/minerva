@@ -1,0 +1,2 @@
+lint:
+	poetry run pycodestyle .

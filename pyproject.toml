@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "enki"
+version = "0.1.0"
+description = "GPT-powered bot built to help students learn software development"
+authors = ["Yurij Mikhalevich <yurij@mikhalevi.ch>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+openai = "^0.27.4"
+discord = "^2.2.2"
+python-dotenv = "^1.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pycodestyle = "^2.10.0"
+
+[tool.poetry.scripts]
+enki = "enki.app:main"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

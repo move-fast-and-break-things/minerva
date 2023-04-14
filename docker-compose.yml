@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  bot:
+    container_name: minerva
+    build: .
+    env_file: .env
+    restart: unless-stopped

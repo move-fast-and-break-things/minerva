@@ -1,3 +1,3 @@
-# Enki
+# Minerva
 
-### GPT-powered bot built to help students learn software development
+### GPT-powered Discord bot built to help students learn software development

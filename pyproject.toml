@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "enki"
+name = "minerva"
 version = "0.1.0"
 description = "GPT-powered bot built to help students learn software development"
 authors = ["Yurij Mikhalevich <yurij@mikhalevi.ch>"]
@@ -16,7 +16,7 @@ python-dotenv = "^1.0.0"
 pycodestyle = "^2.10.0"
 
 [tool.poetry.scripts]
-enki = "enki.app:main"
+minerva = "minerva.app:main"
 
 
 [build-system]

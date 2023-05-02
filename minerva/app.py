@@ -35,91 +35,91 @@ TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
 
 
 class Message:
-    def __init__(self, author, content):
-        self.author = author
-        self.content = content
-        self.len_tokens = len(TOKENIZER.encode(str(self)))
+  def __init__(self, author, content):
+    self.author = author
+    self.content = content
+    self.len_tokens = len(TOKENIZER.encode(str(self)))
 
-    def __str__(self):
-        return f"{self.author}: {self.content}"
+  def __str__(self):
+    return f"{self.author}: {self.content}"
 
 
 class MessageHistory:
-    def __init__(self, bot_id, token_limit=1986):
-        self.bot_id = bot_id
-        self.token_limit = token_limit
-        self.history: List[Message] = []
-        self.current_tokens = len(TOKENIZER.encode(self.format_prompt()))
+  def __init__(self, bot_id, token_limit=1986):
+    self.bot_id = bot_id
+    self.token_limit = token_limit
+    self.history: List[Message] = []
+    self.current_tokens = len(TOKENIZER.encode(self.format_prompt()))
 
-    def add(self, message: Message):
-        self.history.append(message)
-        self.current_tokens += message.len_tokens
-        while self.current_tokens > self.token_limit:
-            deleted_message = self.history.pop(0)
-            self.current_tokens -= deleted_message.len_tokens
+  def add(self, message: Message):
+    self.history.append(message)
+    self.current_tokens += message.len_tokens
+    while self.current_tokens > self.token_limit:
+      deleted_message = self.history.pop(0)
+      self.current_tokens -= deleted_message.len_tokens
 
-    def format_prompt(self):
-        prompt = PROMPT.replace(AI_USER_ID_PLACEHOLDER, str(self.bot_id))
-        for message in self.history:
-            prompt += f"\n{message}\n"
-        prompt += "\nYour response:"
-        return prompt
+  def format_prompt(self):
+    prompt = PROMPT.replace(AI_USER_ID_PLACEHOLDER, str(self.bot_id))
+    for message in self.history:
+      prompt += f"\n{message}\n"
+    prompt += "\nYour response:"
+    return prompt
 
 
 class MyClient(discord.Client):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.chat_histories: Dict[str, MessageHistory] = {}
-        self.response_splitter = MarkdownTextSplitter(chunk_size=2000, chunk_overlap=0)
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.chat_histories: Dict[str, MessageHistory] = {}
+    self.response_splitter = MarkdownTextSplitter(chunk_size=2000, chunk_overlap=0)
 
-    async def on_ready(self):
-        print(f'Logged on as {self.user}!')
+  async def on_ready(self):
+    print(f'Logged on as {self.user}!')
 
-    async def on_guild_join(self, guild):
-        if guild.id != GUILD_ID:
-            await guild.leave()
+  async def on_guild_join(self, guild):
+    if guild.id != GUILD_ID:
+      await guild.leave()
 
-    async def on_message(self, message: discord.Message):
-        if message.author == self.user:
-            # Ignore messages from self
-            return
-        if message.channel.type.name not in ["text"]:
-            # Ignore messages from non-text channels
-            return
-        # Add message to chat history
-        if message.channel.id not in self.chat_histories:
-            self.chat_histories[message.channel.id] = MessageHistory(self.user.id)
-        chat_history = self.chat_histories[message.channel.id]
-        chat_history.add(Message(message.author.id, message.content))
-        # Don't respond if not mentioned explicitly
-        if self.user not in message.mentions:
-            return
+  async def on_message(self, message: discord.Message):
+    if message.author == self.user:
+      # Ignore messages from self
+      return
+    if message.channel.type.name not in ["text"]:
+      # Ignore messages from non-text channels
+      return
+    # Add message to chat history
+    if message.channel.id not in self.chat_histories:
+      self.chat_histories[message.channel.id] = MessageHistory(self.user.id)
+    chat_history = self.chat_histories[message.channel.id]
+    chat_history.add(Message(message.author.id, message.content))
+    # Don't respond if not mentioned explicitly
+    if self.user not in message.mentions:
+      return
 
-        async with message.channel.typing():
-            response = await openai.ChatCompletion.acreate(
-                model=OPENAI_MODEL,
-                messages=[
-                    {"role": "system", "content": chat_history.format_prompt()},
-                ],
-                temperature=0.6,
-                max_tokens=2048,
-            )
+    async with message.channel.typing():
+      response = await openai.ChatCompletion.acreate(
+          model=OPENAI_MODEL,
+          messages=[
+              {"role": "system", "content": chat_history.format_prompt()},
+          ],
+          temperature=0.6,
+          max_tokens=2048,
+      )
 
-            answer = response.choices[0].message.content
-            chat_history.add(Message(self.user.id, answer))
+      answer = response.choices[0].message.content
+      chat_history.add(Message(self.user.id, answer))
 
-            responses = self.response_splitter.create_documents([answer])
-            for response in responses:
-                await message.channel.send(response.page_content, reference=message)
+      responses = self.response_splitter.create_documents([answer])
+      for response in responses:
+        await message.channel.send(response.page_content, reference=message)
 
 
 def main():
-    intents = discord.Intents.default()
-    intents.message_content = True
+  intents = discord.Intents.default()
+  intents.message_content = True
 
-    client = MyClient(intents=intents)
-    client.run(os.getenv("DISCORD_TOKEN"))
+  client = MyClient(intents=intents)
+  client.run(os.getenv("DISCORD_TOKEN"))
 
 
 if __name__ == "__main__":
-    main()
+  main()

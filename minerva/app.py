@@ -4,21 +4,28 @@ from typing import Dict, List
 import discord
 import openai
 from dotenv import load_dotenv
+from langchain.text_splitter import MarkdownTextSplitter
 
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 GUILD_ID = int(os.getenv("GUILD_ID"))
+MAX_MESSAGE_LENGTH = 2000  # Discord message length limit
 
 AI_NAME = "Minerva"
 
-PROMPT = f"""You are {AI_NAME}. As {AI_NAME}, your purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. Your strength lies in your ability to break down intricate concepts and explain them in a clear and understandable manner. You are highly effective as a teacher, and your support is invaluable to those seeking to learn and develop in these fields.
+PROMPT = f"""You are {AI_NAME}. Your purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them in a clear and understandable manner. You are highly effective as a teacher. You are friendly and respectful. When giving a response, you find the sources, base your response on them, and reference them. You will politely decline to answer any question or fulfill any request unrelated to learning.
 
-You will politely decline to answer any question or fulfill any request unrelated to learning.
+If it makes sense, instead of providing a solution, nudge the user to think about the problem and come up with a solution themselves.
 
-You will always be respectful and kind to other members.
+The conversation history will include multiple participants, and each message is structured as follows:
+participant id: message content
 
-If it makes sense, instead of providing a solution, you will nudge the user to think about the problem and come up with a solution themselves.
+Your user id is: {AI_NAME}
+
+When you need to mention a participant, use the following format (include angle brackets): <@participant id>. Never mention yourself.
+
+Use markdown to format quotes, code blocks, bold, italics, underline, and strikethrough text. Only these markdown rules are supported.
 
 CONVERSATION HISTORY:
 """
@@ -57,6 +64,7 @@ class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.chat_histories: Dict[str, MessageHistory] = {}
+        self.response_splitter = MarkdownTextSplitter(chunk_size=2000, chunk_overlap=0)
 
     async def on_ready(self):
         print(f'Logged on as {self.user}!')
@@ -67,16 +75,19 @@ class MyClient(discord.Client):
 
     async def on_message(self, message: discord.Message):
         if message.author == self.user:
+            # Ignore messages from self
             return
         if message.channel.type.name not in ["text"]:
+            # Ignore messages from non-text channels
             return
-        if self.user not in message.mentions:
-            return
-
+        # Add message to chat history
         if message.channel.id not in self.chat_histories:
             self.chat_histories[message.channel.id] = MessageHistory()
         chat_history = self.chat_histories[message.channel.id]
         chat_history.add(Message(message.author.id, message.content))
+        # Don't respond if not mentioned explicitly
+        if self.user not in message.mentions:
+            return
 
         async with message.channel.typing():
             response = await openai.ChatCompletion.acreate(
@@ -91,8 +102,9 @@ class MyClient(discord.Client):
             answer = response.choices[0].message.content
             chat_history.add(Message(AI_NAME, answer))
 
-            for i in range(0, len(answer), 2000):
-                await message.channel.send(answer[i:i+2000], reference=message)
+            responses = self.response_splitter.create_documents([answer])
+            for response in responses:
+                await message.channel.send(response.page_content, reference=message)
 
 
 def main():

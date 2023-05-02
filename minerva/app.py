@@ -1,14 +1,15 @@
-from collections import namedtuple
 import os
 from typing import Dict, List
 import discord
 import openai
 from dotenv import load_dotenv
 from langchain.text_splitter import MarkdownTextSplitter
+import tiktoken
 
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+OPENAI_MODEL = "gpt-3.5-turbo"
 GUILD_ID = int(os.getenv("GUILD_ID"))
 MAX_MESSAGE_LENGTH = 2000  # Discord message length limit
 
@@ -31,33 +32,38 @@ CONVERSATION HISTORY:
 """
 
 
-Message = namedtuple("Message", ["author", "content"])
+TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
+
+
+class Message:
+    def __init__(self, author, content):
+        self.author = author
+        self.content = content
+        self.len_tokens = len(TOKENIZER.encode(str(self)))
+
+    def __str__(self):
+        return f"{self.author}: {self.content}"
 
 
 class MessageHistory:
-    def __init__(self, message_limit=30, max_characters=3000):
-        self.message_limit = message_limit
-        self.max_characters = max_characters
-        self.current_characters = 0
+    def __init__(self, token_limit=1986):
+        self.token_limit = token_limit
         self.history: List[Message] = []
+        self.current_tokens = len(TOKENIZER.encode(self.format_prompt()))
 
     def add(self, message: Message):
         self.history.append(message)
-        self.current_characters += len(message.content)
-        while len(self.history) > self.message_limit or self.current_characters > self.max_characters:
+        self.current_tokens += message.len_tokens
+        while self.current_tokens > self.token_limit:
             deleted_message = self.history.pop(0)
-            self.current_characters -= len(deleted_message.content)
+            self.current_tokens -= deleted_message.len_tokens
 
-    def get(self):
-        return self.history
-
-
-def format_prompt(message_history: MessageHistory):
-    prompt = PROMPT
-    for message in message_history.get():
-        prompt += f"\n{message.author}: {message.content}\n"
-    prompt += "\nYour response:"
-    return prompt
+    def format_prompt(self):
+        prompt = PROMPT
+        for message in self.history:
+            prompt += f"\n{message}\n"
+        prompt += "\nYour response:"
+        return prompt
 
 
 class MyClient(discord.Client):
@@ -91,9 +97,9 @@ class MyClient(discord.Client):
 
         async with message.channel.typing():
             response = await openai.ChatCompletion.acreate(
-                model="gpt-3.5-turbo",
+                model=OPENAI_MODEL,
                 messages=[
-                    {"role": "system", "content": format_prompt(chat_history)},
+                    {"role": "system", "content": chat_history.format_prompt()},
                 ],
                 temperature=0.6,
                 max_tokens=2048,

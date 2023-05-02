@@ -14,6 +14,7 @@ GUILD_ID = int(os.getenv("GUILD_ID"))
 MAX_MESSAGE_LENGTH = 2000  # Discord message length limit
 
 AI_NAME = "Minerva"
+AI_USER_ID_PLACEHOLDER = "<bot_user_id>"
 
 PROMPT = f"""You are {AI_NAME}. Your purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them in a clear and understandable manner. You are highly effective as a teacher. You are friendly and respectful. When giving a response, you find the sources, base your response on them, and reference them. You will politely decline to answer any question or fulfill any request unrelated to learning.
 
@@ -22,9 +23,7 @@ If it makes sense, instead of providing a solution, nudge the user to think abou
 The conversation history will include multiple participants, and each message is structured as follows:
 participant id: message content
 
-Your user id is: {AI_NAME}
-
-When you need to mention a participant, use the following format (include angle brackets): <@participant id>. Never mention yourself.
+Your user id is: {AI_USER_ID_PLACEHOLDER}. When mentioning a participant, use the following format (include angle brackets): <@participant id>. Never mention yourself. Always answer in the language used in the last message you are responding to, don't provide translations of your messages.
 
 Use markdown to format quotes, code blocks, bold, italics, underline, and strikethrough text. Only these markdown rules are supported.
 
@@ -46,7 +45,8 @@ class Message:
 
 
 class MessageHistory:
-    def __init__(self, token_limit=1986):
+    def __init__(self, bot_id, token_limit=1986):
+        self.bot_id = bot_id
         self.token_limit = token_limit
         self.history: List[Message] = []
         self.current_tokens = len(TOKENIZER.encode(self.format_prompt()))
@@ -59,7 +59,7 @@ class MessageHistory:
             self.current_tokens -= deleted_message.len_tokens
 
     def format_prompt(self):
-        prompt = PROMPT
+        prompt = PROMPT.replace(AI_USER_ID_PLACEHOLDER, str(self.bot_id))
         for message in self.history:
             prompt += f"\n{message}\n"
         prompt += "\nYour response:"
@@ -88,7 +88,7 @@ class MyClient(discord.Client):
             return
         # Add message to chat history
         if message.channel.id not in self.chat_histories:
-            self.chat_histories[message.channel.id] = MessageHistory()
+            self.chat_histories[message.channel.id] = MessageHistory(self.user.id)
         chat_history = self.chat_histories[message.channel.id]
         chat_history.add(Message(message.author.id, message.content))
         # Don't respond if not mentioned explicitly
@@ -106,7 +106,7 @@ class MyClient(discord.Client):
             )
 
             answer = response.choices[0].message.content
-            chat_history.add(Message(AI_NAME, answer))
+            chat_history.add(Message(self.user.id, answer))
 
             responses = self.response_splitter.create_documents([answer])
             for response in responses:

@@ -40,6 +40,7 @@ class SplitCandidateInfo:
       if seq == self.active_sequences[-1]:
         last_seq = self.active_sequences.pop()
         self.active_sequences_length -= len(last_seq)
+        return False
       return True
     elif seq in CODE_BLOCK_SEQUENCES:
       self.active_sequences.append(seq)

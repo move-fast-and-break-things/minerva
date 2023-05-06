@@ -65,17 +65,36 @@ class Transformer(nn.Module):
   """
   expected = [
       # FIXME: avoid closing empty sequences
-      # 'Here is an example code snippet to define the Transformer architecture in PyTorch:\n\n```',
-      'Here is an example code snippet to define the Transformer architecture in PyTorch:\n\n``````',  # noqa: E501
-      '```import torch.nn as nn\n\nclass Transformer(nn.Module):```',
-      '```    def init(self, input_size, output_size, num_layers, hidden_size, num_heads, dropout):\n        super(Transformer, self).init()\n```',  # noqa: E501
-      '```        self.embedding = nn.Embedding(input_size, hidden_size)```',
-      '```        self.pos_encoding = PositionalEncoding(hidden_size, dropout)\n\n        self.encoder_layers = nn.ModuleList([```',  # noqa: E501
-      '```            EncoderLayer(hidden_size, numheads, dropout) for  in range(num_layers)])```',
-      '```        self.decoder_layers = nn.ModuleList([```',
-      '```            DecoderLayer(hidden_size, numheads, dropout) for  in range(num_layers)])\n\n        self.linear = nn.Linear(hidden_size, output_size)\n```\n  ',  # noqa: E501
+      # "Here is an example code snippet to define the Transformer architecture in PyTorch:\n\n```",
+      "Here is an example code snippet to define the Transformer architecture in PyTorch:\n\n``````",  # noqa: E501
+      "```import torch.nn as nn\n\nclass Transformer(nn.Module):```",
+      "```    def init(self, input_size, output_size, num_layers, hidden_size, num_heads, dropout):\n        super(Transformer, self).init()\n```",  # noqa: E501
+      "```        self.embedding = nn.Embedding(input_size, hidden_size)```",
+      "```        self.pos_encoding = PositionalEncoding(hidden_size, dropout)\n\n        self.encoder_layers = nn.ModuleList([```",  # noqa: E501
+      "```            EncoderLayer(hidden_size, numheads, dropout) for  in range(num_layers)])```",
+      "```        self.decoder_layers = nn.ModuleList([```",
+      "```            DecoderLayer(hidden_size, numheads, dropout) for  in range(num_layers)])\n\n        self.linear = nn.Linear(hidden_size, output_size)\n```\n  ",  # noqa: E501
   ]
-
   result = list(split_markdown(markdown, max_chunk_size))
+  assert result == expected
 
+
+def test_markdown_splitter_parses_text_with_multiple_code_blocks():
+  max_chunk_size = 100
+  markdown = """Here is how to print "Hello, world!" in Python:
+```
+print("Hello, world!")
+```
+
+Here is how to print "Hello, world!" in JavaScript:
+```
+console.log("Hello, world!");
+```
+"""
+
+  expected = [
+    'Here is how to print "Hello, world!" in Python:\n```\nprint("Hello, world!")\n```\n',
+    'Here is how to print "Hello, world!" in JavaScript:\n```\nconsole.log("Hello, world!");\n```\n'
+  ]
+  result = list(split_markdown(markdown, max_chunk_size))
   assert result == expected

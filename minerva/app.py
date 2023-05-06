@@ -3,8 +3,9 @@ from typing import Dict, List
 import discord
 import openai
 from dotenv import load_dotenv
-from langchain.text_splitter import MarkdownTextSplitter
 import tiktoken
+
+from minerva.markdown_splitter import split_markdown
 
 load_dotenv()
 
@@ -70,7 +71,6 @@ class MyClient(discord.Client):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.chat_histories: Dict[str, MessageHistory] = {}
-    self.response_splitter = MarkdownTextSplitter(chunk_size=2000, chunk_overlap=0)
 
   async def on_ready(self):
     print(f'Logged on as {self.user}!')
@@ -108,9 +108,8 @@ class MyClient(discord.Client):
       answer = response.choices[0].message.content
       chat_history.add(Message(self.user.id, answer))
 
-      responses = self.response_splitter.create_documents([answer])
-      for response in responses:
-        await message.channel.send(response.page_content, reference=message)
+      for response in split_markdown(answer, 2000):
+        await message.channel.send(response, reference=message)
 
 
 def main():

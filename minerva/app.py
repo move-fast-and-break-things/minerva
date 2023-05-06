@@ -103,6 +103,7 @@ class MyClient(discord.Client):
           ],
           temperature=0.6,
           max_tokens=2048,
+          user=f"discord-{message.author.id}",
       )
 
       answer = response.choices[0].message.content

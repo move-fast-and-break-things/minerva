@@ -15,9 +15,9 @@ class SplitCandidates(Enum):
 
 # Order of preference for splitting
 SPLIT_CANDIDATES_PREFRENCE = [
-  SplitCandidates.NEWLINE,
-  SplitCandidates.SPACE,
-  SplitCandidates.LAST_CHAR,
+    SplitCandidates.NEWLINE,
+    SplitCandidates.SPACE,
+    SplitCandidates.LAST_CHAR,
 ]
 
 
@@ -109,8 +109,8 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
       seq = markdown[i:i + j]
       if seq in ALL_SEQUENCES:
         last_char_split_candidate_len = chunk_char_count + \
-          split_candidates[SplitCandidates.LAST_CHAR].active_sequences_length + \
-          len(seq)
+            split_candidates[SplitCandidates.LAST_CHAR].active_sequences_length + \
+            len(seq)
         if last_char_split_candidate_len >= max_chunk_size:
           next_chunk, chunk_start_from, chunk_char_count, chunk_prefix = split_chunk()
           yield next_chunk

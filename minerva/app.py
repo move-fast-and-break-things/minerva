@@ -29,7 +29,7 @@ Your user id is: {AI_USER_ID_PLACEHOLDER}. When mentioning a participant, use th
 Use markdown to format quotes, code blocks, bold, italics, underline, and strikethrough text. Only these markdown rules are supported.
 
 CONVERSATION HISTORY:
-"""
+"""  # noqa: E501
 
 
 TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)

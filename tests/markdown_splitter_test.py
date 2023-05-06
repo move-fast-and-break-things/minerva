@@ -93,8 +93,8 @@ console.log("Hello, world!");
 """
 
   expected = [
-    'Here is how to print "Hello, world!" in Python:\n```\nprint("Hello, world!")\n```\n',
-    'Here is how to print "Hello, world!" in JavaScript:\n```\nconsole.log("Hello, world!");\n```\n'
+      'Here is how to print "Hello, world!" in Python:\n```\nprint("Hello, world!")\n```\n',
+      'Here is how to print "Hello, world!" in JavaScript:\n```\nconsole.log("Hello, world!");\n```\n',  # noqa: E501
   ]
   result = list(split_markdown(markdown, max_chunk_size))
   assert result == expected

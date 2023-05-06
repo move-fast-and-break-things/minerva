@@ -4,7 +4,7 @@
 
 ## How can I add Minerva to my Discord guild (server)?
 
-The bot uses `gpt-3.5-turbo` model, which costs [$0.002 per 1K tokens](https://openai.com/pricing) (or roughly 750 common English words). You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to estimate how many tokens it will take to encode your text.
+The bot uses the `gpt-3.5-turbo` model, which costs [$0.002 per 1K tokens](https://openai.com/pricing) (or roughly 750 common English words). You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to estimate how many tokens it will take to encode your text.
 
 To run Minerva, you'll need to:
 - [install poetry](https://python-poetry.org/docs/#installation)

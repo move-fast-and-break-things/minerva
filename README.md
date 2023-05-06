@@ -10,7 +10,7 @@ To run Minerva, you'll need to:
 - [install poetry](https://python-poetry.org/docs/#installation)
 - [create a Discord bot account](https://python-poetry.org/docs/#installation) and obtain the Discord bot token
 - [create an OpenAI account](https://platform.openai.com/) and get the OpenAI token
-- [obtain the Discord guild (server) id](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) that you want to add the bot to
+- [obtain the id of the Discord guild (server)](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID-) that you want to add the bot to
 
 After you have done this:
 1. Copy `.env.example` to `.env`.

@@ -70,6 +70,11 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
 
   if max_chunk_size <= MAX_FORMATTING_SEQUENCE_LENGTH:
     raise ValueError(f"max_chunk_size must be greater than {MAX_FORMATTING_SEQUENCE_LENGTH}")
+  
+  if len(markdown) <= max_chunk_size:
+    # No need to split if the message is already short enough
+    yield markdown
+    return
 
   split_candidates = {
       SplitCandidates.SPACE: SplitCandidateInfo(),

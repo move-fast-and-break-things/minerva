@@ -1,10 +1,14 @@
 # Minerva
 
-**Minerva** is a ChatGPT-powered Discord bot built to help students learn software development.
+<div align="center">
+  <img alt="Minerva is a GPT-powered Discord bot built to help students learn software development." src="minerva-banner-1280x640.png" width="900px" />
+</div>
+
+**Minerva** is a GPT-powered Discord bot built to help students learn software development.
 
 ## How can I add Minerva to my Discord guild (server)?
 
-The bot uses the `gpt-3.5-turbo` model, which costs [$0.002 per 1K tokens](https://openai.com/pricing) (or roughly 750 common English words). You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to estimate how many tokens it will take to encode your text.
+The bot uses the `gpt-3.5-turbo` model from OpenAI, which costs [$0.002 per 1K tokens](https://openai.com/pricing) (or roughly 750 common English words). You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to estimate how many tokens it will take to encode your text.
 
 To run Minerva, you'll need to:
 - [install poetry](https://python-poetry.org/docs/#installation)

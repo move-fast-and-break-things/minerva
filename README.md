@@ -25,6 +25,13 @@ poetry install
 poetry run minerva
 ```
 
+### Using Docker
+
+You can also run Minerva using docker. To run Minerva in docker, follow the instructions above, but skip `poetry` installation and, instead of the commands suggested in step 3, run:
+```sh
+docker compose up
+```
+
 ## Contributing
 
 This repository follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) standard.

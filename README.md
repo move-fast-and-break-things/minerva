@@ -1,5 +1,7 @@
 # Minerva
 
+[[Blog]](https://mikhalevi.ch/minerva-a-gpt-powered-discord-bot-built-to-help-students-learn-software-development/) [[Demo on YouTube]](https://www.youtube.com/watch?v=H9WEqr7ZgYk)
+
 <div align="center">
   <img alt="Minerva is a GPT-powered Discord bot built to help students learn software development." src="minerva-banner-1280x640.png" width="900px" />
 </div>

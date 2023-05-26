@@ -12,7 +12,7 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = "gpt-3.5-turbo"
 GUILD_ID = int(os.getenv("GUILD_ID"))
-MAX_MESSAGE_LENGTH = 2000  # Discord message length limit
+MAX_DISCORD_MESSAGE_LENGTH_CHAR = 2000
 
 AI_NAME = "Minerva"
 AI_USER_ID_PLACEHOLDER = "<bot_user_id>"
@@ -46,7 +46,7 @@ class Message:
 
 
 class MessageHistory:
-  def __init__(self, bot_id, token_limit=1986):
+  def __init__(self, bot_id, token_limit=1920):
     self.bot_id = bot_id
     self.token_limit = token_limit
     self.history: List[Message] = []
@@ -109,7 +109,7 @@ class MyClient(discord.Client):
       answer = response.choices[0].message.content
       chat_history.add(Message(self.user.id, answer))
 
-      for response in split_markdown(answer, 2000):
+      for response in split_markdown(answer, MAX_DISCORD_MESSAGE_LENGTH_CHAR):
         await message.channel.send(response, reference=message)
 
 

@@ -10,7 +10,7 @@ from minerva.markdown_splitter import split_markdown
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = "gpt-3.5-turbo"
+OPENAI_MODEL = "gpt-3.5-turbo-0613"
 GUILD_ID = int(os.getenv("GUILD_ID"))
 MAX_DISCORD_MESSAGE_LENGTH_CHAR = 2000
 

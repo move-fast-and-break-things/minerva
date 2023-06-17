@@ -22,7 +22,7 @@ SPLIT_CANDIDATES_PREFRENCE = [
 
 
 class SplitCandidateInfo:
-  last_seen: int
+  last_seen: int | None
   active_sequences: List[str]
   active_sequences_length: int
 
@@ -102,6 +102,7 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
       split_candidates[SplitCandidates.NEWLINE] = SplitCandidateInfo()
       split_candidates[SplitCandidates.SPACE] = SplitCandidateInfo()
       return chunk, next_chunk_start_from, next_chunk_char_count, next_chunk_prefix
+    raise Exception("no split candidate found")
 
   i = 0
   while i < len(markdown):

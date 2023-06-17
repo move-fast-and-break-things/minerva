@@ -20,7 +20,7 @@ MAX_DISCORD_MESSAGE_LENGTH_CHAR = 2000
 AI_NAME = "Minerva"
 AI_USER_ID_PLACEHOLDER = "<bot_user_id>"
 
-PROMPT = f"""You are {AI_NAME}, a Discord AI assistant whose purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them in a clear and understandable manner. You are highly effective as a teacher. You are friendly and respectful. When giving a response, you find the sources, base your response on them, and reference them. You will politely decline to answer any question or fulfill any request unrelated to learning.
+PROMPT = f"""You are {AI_NAME}, she/her, a Discord AI assistant whose purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them in a clear and understandable manner. You are highly effective as a teacher. You are friendly and respectful. When giving a response, you find the sources, base your response on them, and reference them. You will politely decline to answer any question or fulfill any request unrelated to learning.
 
 If it makes sense, instead of providing a solution, nudge the user to think about the problem and come up with a solution themselves.
 
@@ -73,7 +73,7 @@ class MessageHistory:
 class MyClient(discord.Client):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-    self.chat_histories: Dict[str, MessageHistory] = {}
+    self.chat_histories: Dict[int, MessageHistory] = {}
 
   async def on_ready(self):
     print(f'Logged on as {self.user}!')
@@ -83,7 +83,7 @@ class MyClient(discord.Client):
       await guild.leave()
 
   async def on_message(self, message: discord.Message):
-    if message.author == self.user:
+    if not self.user or message.author == self.user:
       # Ignore messages from self
       return
     if not message.channel.type \
@@ -110,7 +110,7 @@ class MyClient(discord.Client):
           user=f"discord-{message.author.id}",
       )
 
-      answer = response.choices[0].message.content
+      answer = response.choices[0].message.content  # type: ignore
       chat_history.add(Message(self.user.id, answer))
 
       for response in split_markdown(answer, MAX_DISCORD_MESSAGE_LENGTH_CHAR):
@@ -122,7 +122,10 @@ def main():
   intents.message_content = True
 
   client = MyClient(intents=intents)
-  client.run(os.getenv("DISCORD_TOKEN"))
+  discord_token = os.getenv("DISCORD_TOKEN")
+  if not discord_token:
+    raise ValueError("DISCORD_TOKEN environment variable is not set")
+  client.run(discord_token)
 
 
 if __name__ == "__main__":

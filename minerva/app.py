@@ -100,17 +100,24 @@ class MyClient(discord.Client):
       return
 
     async with message.channel.typing():
-      response = await openai.ChatCompletion.acreate(
-          model=OPENAI_MODEL,
-          messages=[
-              {"role": "system", "content": chat_history.format_prompt()},
-          ],
-          temperature=0.6,
-          max_tokens=2048,
-          user=f"discord-{message.author.id}",
-      )
+      try:
+        response = await openai.ChatCompletion.acreate(
+            model=OPENAI_MODEL,
+            messages=[
+                {"role": "system", "content": chat_history.format_prompt()},
+            ],
+            temperature=0.6,
+            max_tokens=2048,
+            user=f"discord-{message.author.id}",
+        )
+        answer = response.choices[0].message.content  # type: ignore
+      except Exception as err:
+        print("OpenAI API error:", err)
+        answer = (
+          "I'm sorry, I'm having trouble understanding you right now."
+          " Could you please rephrase your question?"
+        )
 
-      answer = response.choices[0].message.content  # type: ignore
       chat_history.add(Message(self.user.id, answer))
 
       for response in split_markdown(answer, MAX_DISCORD_MESSAGE_LENGTH_CHAR):

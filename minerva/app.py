@@ -11,7 +11,10 @@ load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = "gpt-3.5-turbo-0613"
-GUILD_ID = int(os.getenv("GUILD_ID"))
+GUILD_ID_STR = os.getenv("GUILD_ID")
+if GUILD_ID_STR is None:
+  raise ValueError("GUILD_ID environment variable is not set")
+GUILD_ID = int(GUILD_ID_STR)
 MAX_DISCORD_MESSAGE_LENGTH_CHAR = 2000
 
 AI_NAME = "Minerva"
@@ -83,7 +86,8 @@ class MyClient(discord.Client):
     if message.author == self.user:
       # Ignore messages from self
       return
-    if message.channel.type.name not in ["text"]:
+    if not message.channel.type \
+        or message.channel.type.name not in ["text", "forum", "public_thread"]:
       # Ignore messages from non-text channels
       return
     # Add message to chat history

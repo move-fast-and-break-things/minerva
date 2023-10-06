@@ -2,6 +2,7 @@ import os
 from typing import Dict, List
 import discord
 import openai
+import random
 from dotenv import load_dotenv
 import tiktoken
 
@@ -87,7 +88,7 @@ class MyClient(discord.Client):
       # Ignore messages from self
       return
     if not message.channel.type \
-        or message.channel.type.name not in ["text", "forum", "public_thread"]:
+            or message.channel.type.name not in ["text", "forum", "public_thread"]:
       # Ignore messages from non-text channels
       return
     # Add message to chat history
@@ -95,8 +96,8 @@ class MyClient(discord.Client):
       self.chat_histories[message.channel.id] = MessageHistory(self.user.id)
     chat_history = self.chat_histories[message.channel.id]
     chat_history.add(Message(message.author.id, message.content))
-    # Don't respond if not mentioned explicitly
-    if self.user not in message.mentions:
+    # Inore 90% of the messages if not mentioned explicitly
+    if self.user not in message.mentions and random.random() > 0.1:
       return
 
     async with message.channel.typing():
@@ -114,8 +115,8 @@ class MyClient(discord.Client):
       except Exception as err:
         print("OpenAI API error:", err)
         answer = (
-          "I'm sorry, I'm having trouble understanding you right now."
-          " Could you please rephrase your question?"
+            "I'm sorry, I'm having trouble understanding you right now."
+            " Could you please rephrase your question?"
         )
 
       chat_history.add(Message(self.user.id, answer))

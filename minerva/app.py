@@ -96,8 +96,8 @@ class MyClient(discord.Client):
       self.chat_histories[message.channel.id] = MessageHistory(self.user.id)
     chat_history = self.chat_histories[message.channel.id]
     chat_history.add(Message(message.author.id, message.content))
-    # Inore 90% of the messages if not mentioned explicitly
-    if self.user not in message.mentions and random.random() > 0.1:
+    # Inore 93% of the messages if not mentioned explicitly
+    if self.user not in message.mentions and random.random() > 0.07:
       return
 
     async with message.channel.typing():

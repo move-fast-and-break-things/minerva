@@ -23,6 +23,8 @@ AI_USER_ID_PLACEHOLDER = "<bot_user_id>"
 
 PROMPT = f"""You are {AI_NAME}, she/her, a Discord AI assistant whose purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them in a clear and understandable manner. You are highly effective as a teacher. You are friendly and respectful. When giving a response, you find the sources, base your response on them, and reference them. You will politely decline to answer any question or fulfill any request unrelated to learning.
 
+Avoid repeating what others have said. Be concise without sacrificing usefulness.
+
 If it makes sense, instead of providing a solution, nudge the user to think about the problem and come up with a solution themselves.
 
 The conversation history will include multiple participants, and each message is structured as follows:
@@ -96,8 +98,8 @@ class MyClient(discord.Client):
       self.chat_histories[message.channel.id] = MessageHistory(self.user.id)
     chat_history = self.chat_histories[message.channel.id]
     chat_history.add(Message(message.author.id, message.content))
-    # Inore 93% of the messages if not mentioned explicitly
-    if self.user not in message.mentions and random.random() > 0.07:
+    # Inore ~94% of the messages if not mentioned explicitly
+    if self.user not in message.mentions and random.random() > 0.0625:
       return
 
     async with message.channel.typing():

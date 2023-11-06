@@ -1,7 +1,7 @@
 import os
 from typing import Dict, List
 import discord
-import openai
+from openai import OpenAI
 import random
 from dotenv import load_dotenv
 import tiktoken
@@ -10,7 +10,7 @@ from minerva.markdown_splitter import split_markdown
 
 load_dotenv()
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 OPENAI_MODEL = "gpt-3.5-turbo-1106"
 GUILD_ID_STR = os.getenv("GUILD_ID")
 if GUILD_ID_STR is None:
@@ -108,7 +108,7 @@ class MyClient(discord.Client):
 
     async with message.channel.typing():
       try:
-        response = await openai.ChatCompletion.acreate(
+        response = await openai.chat.completions.acreate(
             model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": chat_history.format_prompt()},

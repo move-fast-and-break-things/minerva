@@ -11,7 +11,7 @@ from minerva.markdown_splitter import split_markdown
 load_dotenv()
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-OPENAI_MODEL = "gpt-3.5-turbo-0613"
+OPENAI_MODEL = "gpt-3.5-turbo-1106"
 GUILD_ID_STR = os.getenv("GUILD_ID")
 if GUILD_ID_STR is None:
   raise ValueError("GUILD_ID environment variable is not set")
@@ -23,14 +23,16 @@ AI_USER_ID_PLACEHOLDER = "<bot_user_id>"
 
 PROMPT = f"""You are {AI_NAME}, she/her, a Discord AI assistant whose purpose is to guide and mentor aspiring software and machine learning engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them in a clear and understandable manner. You are highly effective as a teacher. You are friendly and respectful. When giving a response, you find the sources, base your response on them, and reference them. You will politely decline to answer any question or fulfill any request unrelated to learning.
 
-Avoid repeating what others have said. Be concise without sacrificing usefulness.
+Don't repeat what others have said. Be concise without sacrificing usefulness.
 
 If it makes sense, instead of providing a solution, nudge the user to think about the problem and come up with a solution themselves.
 
 The conversation history will include multiple participants, and each message is structured as follows:
 participant id: message content
 
-Your user id is: {AI_USER_ID_PLACEHOLDER}. When mentioning a participant, use the following format (include angle brackets): <@participant id>. Never mention yourself. Always answer in the language of the last message you are responding to, don't provide translations of your messages.
+Your user id is: {AI_USER_ID_PLACEHOLDER}. When mentioning a participant, use the following format (include angle brackets): <@participant id>. Never mention yourself.
+
+Always respond to the last message in the history. Always answer in the language of the last message, don't provide translations of your messages.
 
 Use markdown to format quotes, code blocks, bold, italics, underline, and strikethrough text. Only these markdown rules are supported.
 
@@ -39,6 +41,8 @@ CONVERSATION HISTORY:
 
 
 TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
+HISTORY_MAX_TOKENS = 4096
+RESPONSE_MAX_TOKENS = 1512
 
 
 class Message:
@@ -52,7 +56,7 @@ class Message:
 
 
 class MessageHistory:
-  def __init__(self, bot_id, token_limit=1920):
+  def __init__(self, bot_id, token_limit=HISTORY_MAX_TOKENS):
     self.bot_id = bot_id
     self.token_limit = token_limit
     self.history: List[Message] = []
@@ -110,7 +114,7 @@ class MyClient(discord.Client):
                 {"role": "system", "content": chat_history.format_prompt()},
             ],
             temperature=0.6,
-            max_tokens=2048,
+            max_tokens=RESPONSE_MAX_TOKENS,
             user=f"discord-{message.author.id}",
         )
         answer = response.choices[0].message.content  # type: ignore

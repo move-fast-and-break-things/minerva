@@ -8,10 +8,10 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-openai = "^0.27.8"
-discord = "^2.2.2"
+openai = "^1.0.1"
+discord = "^2.3.2"
 python-dotenv = "^1.0.0"
-tiktoken = "^0.3.3"
+tiktoken = "^0.5.1"
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.0.2"

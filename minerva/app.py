@@ -11,7 +11,7 @@ from minerva.markdown_splitter import split_markdown
 load_dotenv()
 
 openai = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-OPENAI_MODEL = "gpt-3.5-turbo-1106"
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo-1106")
 GUILD_ID_STR = os.getenv("GUILD_ID")
 if GUILD_ID_STR is None:
   raise ValueError("GUILD_ID environment variable is not set")
@@ -132,6 +132,8 @@ class MyClient(discord.Client):
 
 
 def main():
+  print(f"Starting Minerva powered by {OPENAI_MODEL}")
+
   intents = discord.Intents.default()
   intents.message_content = True
 

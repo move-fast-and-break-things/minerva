@@ -14,7 +14,13 @@
   <img alt="Minerva demo" src="minerva-demo.gif" width="900px" />
 </a>
 
-The bot uses the `gpt-3.5-turbo` model from OpenAI, which costs [$0.002 per 1K tokens](https://openai.com/pricing) (or roughly 750 common English words). You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to estimate how many tokens it will take to encode your text.
+By default, the bot uses the `gpt-3.5-turbo-1106` model from OpenAI, which costs
+[$0.002 per 1K tokens](https://openai.com/pricing) (or roughly 750 common English words).
+You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to
+estimate how many tokens it will take to encode your text.
+
+You can switch to a different OpenAI model by specifying it in the `OPENAI_MODEL` environment variable.
+For example, `OPENAI_MODEL=gpt-4-1106-preview` will make Minerva use the latest GPT-4 model.
 
 To run Minerva, you'll need to:
 - [install poetry](https://python-poetry.org/docs/#installation)

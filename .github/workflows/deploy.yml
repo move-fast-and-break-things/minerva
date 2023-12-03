@@ -24,7 +24,7 @@ jobs:
           GUILD_ID: '${{ secrets.GUILD_ID }}'
           OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}'
         run: |
-          echo "${DEPLOY_HOST} ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBFPPx332w7K1L4b9p6o9957VBOq414gpQ26dh1KVCZr+DtarsjksqDyK0pW9ukF/k9YyAnz2PsrkVCJbFNyxd70=" >> ~/.ssh/known_hosts
+          echo "${DEPLOY_HOST} ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHw/OVpri5hfX3JP6XdcVTZYfDXhVhoZ3PtdB1Uc3Kx604uTSfXe/+N0QPCeWwWP6dUbmGDCP0nXTHoH7uUqjOc=" >> ~/.ssh/known_hosts
           docker context create --docker "host=ssh://root@${DEPLOY_HOST}" --description "deploy server" "mfabt.club"
           echo "DISCORD_TOKEN=${DISCORD_TOKEN}" > .env
           echo "GUILD_ID=${GUILD_ID}" >> .env

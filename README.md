@@ -19,7 +19,7 @@ By default, the bot uses the `gpt-3.5-turbo-1106` model from OpenAI, which costs
 You can use [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to
 estimate how many tokens it will take to encode your text.
 
-You can switch to a different OpenAI model by specifying it in the `OPENAI_MODEL` environment variable.
+You can switch to a different OpenAI model by defining the `OPENAI_MODEL` environment variable.
 For example, `OPENAI_MODEL=gpt-4-1106-preview` will make Minerva use the latest GPT-4 model.
 
 To run Minerva, you'll need to:

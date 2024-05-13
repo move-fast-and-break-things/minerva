@@ -29,5 +29,5 @@ jobs:
           echo "DISCORD_TOKEN=${DISCORD_TOKEN}" > .env
           echo "GUILD_ID=${GUILD_ID}" >> .env
           echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
-          echo "OPENAI_MODEL=gpt-4-1106-preview" >> .env
+          echo "OPENAI_MODEL=gpt-4o-2024-05-13" >> .env
           docker --context "mfabt.club" compose up --build -d

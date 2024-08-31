@@ -3,7 +3,7 @@ from typing import List
 import tiktoken
 
 from minerva.env import OPENAI_MODEL
-from minerva.prompt import AI_USER_ID_PLACEHOLDER, PROMPT
+from minerva.prompt import AI_USERNAME_PLACEHOLDER, PROMPT
 
 TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
 HISTORY_MAX_TOKENS = 4096
@@ -20,8 +20,8 @@ class Message:
 
 
 class MessageHistory:
-  def __init__(self, bot_id, token_limit=HISTORY_MAX_TOKENS):
-    self.bot_id = bot_id
+  def __init__(self, bot_username, token_limit=HISTORY_MAX_TOKENS):
+    self.bot_username = bot_username
     self.token_limit = token_limit
     self.history: List[Message] = []
     self.current_tokens = len(TOKENIZER.encode(self.format_prompt()))
@@ -34,7 +34,7 @@ class MessageHistory:
       self.current_tokens -= deleted_message.len_tokens
 
   def format_prompt(self):
-    prompt = PROMPT.replace(AI_USER_ID_PLACEHOLDER, str(self.bot_id))
+    prompt = PROMPT.replace(AI_USERNAME_PLACEHOLDER, str(self.bot_username))
     for message in self.history:
       prompt += f"\n{message}\n"
     prompt += "\nYour response:"

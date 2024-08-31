@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "minerva"
-version = "1.0.0"
+version = "2.0.0"
 description = "GPT-powered bot built to help students learn software development"
 authors = ["Yurij Mikhalevich <yurij@mikhalevi.ch>"]
 license = "MIT"

@@ -8,6 +8,7 @@ from telegram.ext import Application, ContextTypes, MessageHandler, filters, Cha
 
 from minerva.markdown_splitter import split_markdown
 from minerva.message_history import Message, MessageHistory
+from minerva.prompt import USERNAMELESS_ID_PREFIX
 
 MAX_TELEGRAM_MESSAGE_LENGTH_CHAR = 2000
 RESPONSE_MAX_TOKENS = 1512
@@ -54,30 +55,34 @@ class Minerva:
     await update.my_chat_member.chat.leave()
 
   async def on_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.message:
+    message = update.message
+    if not message:
       return
 
-    if not update.message.text:
+    if not message.text:
       # Minerva only support text messages
       return
 
-    if update.message.chat.id != self.chat_id:
-      await update.message.reply_text("I'm sorry, I can't talk to you here.")
-      if update.message.chat.type != ChatType.PRIVATE:
-        await update.message.chat.leave()
+    if message.chat.id != self.chat_id:
+      await message.reply_text("I'm sorry, I can't talk to you here.")
+      if message.chat.type != ChatType.PRIVATE:
+        await message.chat.leave()
       return
 
-    topic_id = self._get_topic_id(update.message)
+    topic_id = self._get_topic_id(message)
     # Add message to chat history
     if topic_id not in self.chat_histories:
-      self.chat_histories[topic_id] = MessageHistory(self.me.id)
+      self.chat_histories[topic_id] = MessageHistory(self.me.username)
     chat_history = self.chat_histories[topic_id]
-    chat_history.add(Message(update.message.from_user.id, update.message.text))
+    chat_history.add(Message(
+        message.from_user.username or f"{USERNAMELESS_ID_PREFIX}{message.from_user.id}",
+        message.text,
+    ))
 
-    if not self._is_reply_to_me(update.message) and not self._is_mentioned(update.message):
+    if not self._is_reply_to_me(message) and not self._is_mentioned(message):
       return
 
-    await update.message.chat.send_chat_action(ChatAction.TYPING)
+    await message.chat.send_chat_action(ChatAction.TYPING, message_thread_id=topic_id)
     try:
       response = await self.openai.chat.completions.create(
           model=self.openai_model,
@@ -88,7 +93,7 @@ class Minerva:
           frequency_penalty=0.7,
           presence_penalty=0.3,
           max_tokens=RESPONSE_MAX_TOKENS,
-          user=f"telegram-{update.message.from_user.id}",
+          user=f"telegram-{message.from_user.id}",
       )
       answer = response.choices[0].message.content  # type: ignore
     except Exception as err:
@@ -98,10 +103,10 @@ class Minerva:
           " Could you please rephrase your question?"
       )
 
-    chat_history.add(Message(self.me.id, answer))
+    chat_history.add(Message(self.me.username, answer))
 
     for response in split_markdown(answer, MAX_TELEGRAM_MESSAGE_LENGTH_CHAR):
-      await update.message.reply_text(response)
+      await message.reply_markdown(response)
 
   def _get_topic_id(self, message: TelegramMessage) -> int:
     return message.message_thread_id

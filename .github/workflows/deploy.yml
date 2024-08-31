@@ -26,8 +26,9 @@ jobs:
         run: |
           echo "${DEPLOY_HOST} ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHw/OVpri5hfX3JP6XdcVTZYfDXhVhoZ3PtdB1Uc3Kx604uTSfXe/+N0QPCeWwWP6dUbmGDCP0nXTHoH7uUqjOc=" >> ~/.ssh/known_hosts
           docker context create --docker "host=ssh://root@${DEPLOY_HOST}" --description "deploy server" "mfabt.club"
+          echo "" > .env
           echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
           echo "OPENAI_MODEL=gpt-4o-2024-08-06" >> .env
-          echo "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}" > .env
+          echo "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}" >> .env
           echo "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}" >> .env
           docker --context "mfabt.club" compose up --build -d

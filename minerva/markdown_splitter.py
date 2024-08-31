@@ -65,7 +65,7 @@ class SplitCandidateInfo:
 
 def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, None]:
   """Naive markdown splitter that splits long messages in chunks
-  preserving the markdown formatting tags supported by Discord.
+  preserving the markdown formatting tags supported by Discord and Telegram.
   """
 
   if max_chunk_size <= MAX_FORMATTING_SEQUENCE_LENGTH:

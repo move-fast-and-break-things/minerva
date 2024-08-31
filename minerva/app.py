@@ -94,7 +94,7 @@ class MyClient(discord.Client):
       # Ignore messages from self
       return
     if not message.channel.type \
-            or message.channel.type.name not in ["text", "forum", "public_thread"]:
+        or message.channel.type.name not in ["text", "forum", "public_thread"]:
       # Ignore messages from non-text channels
       return
     # Add message to chat history

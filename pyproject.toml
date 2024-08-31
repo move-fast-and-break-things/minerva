@@ -22,7 +22,11 @@ flake8 = "^7.1.1"
 [tool.poetry.scripts]
 minerva = "minerva.app:main"
 
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.autopep8]
+ignore = ["E125", "E127"]
+in-place = true
+recursive = true

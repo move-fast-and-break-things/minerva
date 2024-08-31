@@ -1,6 +1,6 @@
 # Minerva
 
-[[Blog]](https://mikhalevi.ch/minerva-a-gpt-powered-discord-bot-built-to-help-students-learn-software-development/) [[Demo on YouTube (for old Discord version)]](https://www.youtube.com/watch?v=H9WEqr7ZgYk)
+[[Blog]](https://mikhalevi.ch/minerva-a-gpt-powered-discord-bot-built-to-help-students-learn-software-development/) [[Demo on YouTube (of old Discord version)]](https://www.youtube.com/watch?v=H9WEqr7ZgYk)
 
 <div align="center">
   <img alt="Minerva is a GPT-powered Telegram bot built to help Move Fast and Break Things community members learn software development." src="minerva-telegram-banner-1280x640.png" width="900px" />

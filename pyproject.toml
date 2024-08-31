@@ -12,7 +12,6 @@ openai = "^1.43.0"
 python-dotenv = "^1.0.1"
 tiktoken = "^0.7.0"
 python-telegram-bot = "^21.4"
-discord = "^2.3.2"
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.3.1"

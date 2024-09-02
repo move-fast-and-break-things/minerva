@@ -38,8 +38,8 @@ def test_parse_ics():
   assert events[2].start == datetime(2024, 9, 5, 11, 0, tzinfo=events[2].start.tzinfo)
   assert events[2].end == datetime(2024, 9, 5, 12, 0, tzinfo=events[2].end.tzinfo)
   assert events[2].recurrence_rule == icalendar.vRecur(
-    FREQ=["WEEKLY"],
-    INTERVAL=[2],
-    WKST=['SU'],
-    BYDAY=["TH"],
+      FREQ=["WEEKLY"],
+      INTERVAL=[2],
+      WKST=["SU"],
+      BYDAY=["TH"],
   )

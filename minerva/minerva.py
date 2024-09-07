@@ -89,7 +89,7 @@ class Minerva:
           messages=[
               {"role": "system", "content": chat_history.format_prompt()},
           ],
-          temperature=0.7,
+          temperature=0.8,
           frequency_penalty=0.7,
           presence_penalty=0.3,
           max_tokens=RESPONSE_MAX_TOKENS,

@@ -19,3 +19,5 @@ TELEGRAM_CHAT_ID_STR = os.getenv("TELEGRAM_CHAT_ID")
 if TELEGRAM_CHAT_ID_STR is None:
   raise ValueError("TELEGRAM_CHAT_ID environment variable is not set")
 TELEGRAM_CHAT_ID = int(TELEGRAM_CHAT_ID_STR)
+
+AI_NAME = "Minerva"

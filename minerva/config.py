@@ -11,6 +11,6 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Limits Minerva to a specific Telegram chat
 TELEGRAM_CHAT_ID_STR = os.getenv("TELEGRAM_CHAT_ID")
-TELEGRAM_CHAT_ID = int(TELEGRAM_CHAT_ID_STR) if TELEGRAM_CHAT_ID_STR.isdigit() else None
+TELEGRAM_CHAT_ID = int(TELEGRAM_CHAT_ID_STR) if TELEGRAM_CHAT_ID_STR is not None else None
 
 AI_NAME = "Minerva"

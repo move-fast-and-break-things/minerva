@@ -1,13 +1,27 @@
-from minerva.env import OPENAI_API_KEY, OPENAI_MODEL, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+from minerva.config import (
+    AI_NAME,
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+    TELEGRAM_BOT_TOKEN,
+    TELEGRAM_CHAT_ID,
+)
 
 from telegram import Update
 from telegram.ext import Application
 
 from minerva.minerva import Minerva
-from minerva.prompt import AI_NAME
 
 
 def main():
+  if OPENAI_API_KEY is None:
+    raise ValueError("OPENAI_API_KEY is required")
+  if TELEGRAM_BOT_TOKEN is None:
+    raise ValueError("TELEGRAM_BOT_TOKEN is required")
+  if TELEGRAM_CHAT_ID is None:
+    raise ValueError("TELEGRAM_CHAT_ID is required")
+  if OPENAI_MODEL is None:
+    raise ValueError("OPENAI_MODEL is required")
+
   print(f"Starting {AI_NAME} powered by {OPENAI_MODEL}")
 
   async def initialize_minerva(application: Application) -> None:

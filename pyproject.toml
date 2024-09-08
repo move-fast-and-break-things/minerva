@@ -12,6 +12,9 @@ openai = "^1.43.0"
 python-dotenv = "^1.0.1"
 tiktoken = "^0.7.0"
 python-telegram-bot = "^21.4"
+httpx = "^0.27.2"
+pyparsing = "^3.1.4"
+lxml = {extras = ["html-clean"], version = "^5.3.0"}
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.3.1"

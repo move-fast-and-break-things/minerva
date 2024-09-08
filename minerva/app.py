@@ -13,6 +13,15 @@ from minerva.minerva import Minerva
 
 
 def main():
+  if OPENAI_API_KEY is None:
+    raise ValueError("OPENAI_API_KEY is required")
+  if TELEGRAM_BOT_TOKEN is None:
+    raise ValueError("TELEGRAM_BOT_TOKEN is required")
+  if TELEGRAM_CHAT_ID is None:
+    raise ValueError("TELEGRAM_CHAT_ID is required")
+  if OPENAI_MODEL is None:
+    raise ValueError("OPENAI_MODEL is required")
+
   print(f"Starting {AI_NAME} powered by {OPENAI_MODEL}")
 
   async def initialize_minerva(application: Application) -> None:

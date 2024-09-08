@@ -14,7 +14,8 @@ from minerva.tools.fetch_html import fetch_html
 from minerva.tool_utils import format_tool_username, parse_tool_call
 
 MAX_TELEGRAM_MESSAGE_LENGTH_CHAR = 2000
-RESPONSE_MAX_TOKENS = 1512
+OPENAI_RESPONSE_MAX_TOKENS = 1512
+TOOL_RESPONSE_MAX_TOKENS = 2048
 
 MAX_TOOL_USE_COUNT = 5
 MAX_RETRY_COUNT = 3
@@ -121,7 +122,7 @@ class Minerva:
           temperature=0.8,
           frequency_penalty=0.7,
           presence_penalty=0.3,
-          max_tokens=RESPONSE_MAX_TOKENS,
+          max_tokens=OPENAI_RESPONSE_MAX_TOKENS,
           user=f"telegram-{message.from_user.id}",
       )
       answer = response.choices[0].message.content  # type: ignore
@@ -189,7 +190,8 @@ class Minerva:
           tool_response = await self.tools[tool_call.tool_name](*tool_call.args)
           # ensure we won't blow up the conversation history with a huge tool response
           truncated_tool_response = trim_by_token_size(
-              tool_response, RESPONSE_MAX_TOKENS, "...TRUNCATED")
+              tool_response, TOOL_RESPONSE_MAX_TOKENS, "...TRUNCATED",
+          )
           chat_history.add(Message(format_tool_username(
               tool_call.tool_name), truncated_tool_response))
         except Exception as err:

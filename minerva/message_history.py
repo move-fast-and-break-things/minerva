@@ -5,7 +5,7 @@ import tiktoken
 from minerva.config import OPENAI_MODEL
 
 TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
-HISTORY_MAX_TOKENS = 6144
+HISTORY_MAX_TOKENS = 8192
 
 
 class Message:

@@ -97,7 +97,7 @@ The action can either be "{ModelAction.USE_TOOL}" or "{ModelAction.RESPOND}."
 
 Then, provide the content of your message starting with the newline.
 
-System ERROR messages are prefixed with "ERROR:" and are visible to you only. If you get an error, first fulfilling the user request again.
+System ERROR messages are prefixed with "ERROR:" and are visible to you only. If you get an error, first try fulfilling the user request again.
 
 For example:
 {ACTION_PREFIX} {ModelAction.USE_TOOL}

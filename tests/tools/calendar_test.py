@@ -10,8 +10,11 @@ def test_query_ics():
     ics = f.read()
     cal = parse_ics(ics)
 
-  events = query_calendar(cal, datetime(2024, 9, 1, tzinfo=timezone.utc),
-                          datetime(2024, 9, 6, tzinfo=timezone.utc))
+  events = query_calendar(
+      cal,
+      datetime(2024, 9, 1, tzinfo=timezone.utc),
+      datetime(2024, 9, 6, tzinfo=timezone.utc),
+  )
 
   assert len(events) == 3
 

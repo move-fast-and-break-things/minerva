@@ -23,6 +23,7 @@ jobs:
           OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}'
           TELEGRAM_BOT_TOKEN: '${{ secrets.TELEGRAM_BOT_TOKEN }}'
           TELEGRAM_CHAT_ID: '${{ secrets.TELEGRAM_CHAT_ID }}'
+          CALENDAR_ICS_URL: '${{ secrets.CALENDAR_ICS_URL }}'
         run: |
           echo "${DEPLOY_HOST} ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHw/OVpri5hfX3JP6XdcVTZYfDXhVhoZ3PtdB1Uc3Kx604uTSfXe/+N0QPCeWwWP6dUbmGDCP0nXTHoH7uUqjOc=" >> ~/.ssh/known_hosts
           docker context create --docker "host=ssh://root@${DEPLOY_HOST}" --description "deploy server" "mfabt.club"
@@ -31,4 +32,5 @@ jobs:
           echo "OPENAI_MODEL=gpt-4o-2024-08-06" >> .env
           echo "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}" >> .env
           echo "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}" >> .env
+          echo "CALENDAR_ICS_URL=${CALENDAR_ICS_URL}" >> .env
           docker --context "mfabt.club" compose up --build -d

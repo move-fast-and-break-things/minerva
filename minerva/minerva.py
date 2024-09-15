@@ -6,7 +6,7 @@ from telegram import Update, Message as TelegramMessage, User as TelegramUser
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
 from telegram.ext import Application, ContextTypes, MessageHandler, filters, ChatMemberHandler
 
-from minerva.config import AI_NAME
+from minerva.config import AI_NAME, CALENDAR_ICS_URL
 from minerva.markdown_splitter import split_markdown
 from minerva.message_history import Message, MessageHistory, trim_by_token_size
 from minerva.prompt import USERNAMELESS_ID_PREFIX, ModelAction, Prompt, parse_model_message
@@ -43,10 +43,17 @@ class Minerva:
         "fetch_html": fetch_html,
     }
 
+    if CALENDAR_ICS_URL:
+      from minerva.tools.calendar import CalendarTool
+      calendar_tool = CalendarTool(CALENDAR_ICS_URL)
+      self.tools["query_calendar"] = calendar_tool.query
+
   async def initialize(self) -> None:
     self.me = cast(TelegramUser, await self.application.bot.get_me())
     self.username_with_mention = f"@{self.me.username}"
     self.prompt = Prompt(ai_name=AI_NAME, ai_username=self.me.username, tools=self.tools)
+
+    print("Starting Minerva with prompt:\n", self.prompt)
 
     self.application.add_handler(MessageHandler(filters.TEXT, self.on_message))
     self.application.add_handler(ChatMemberHandler(
@@ -113,6 +120,7 @@ class Minerva:
 
     try:
       prompt = self.prompt.format(chat_history)
+      print(f"OpenAPI prompt:\n{prompt}\n\n")
 
       response = await self.openai.chat.completions.create(
           model=self.openai_model,
@@ -126,6 +134,7 @@ class Minerva:
           user=f"telegram-{message.from_user.id}",
       )
       answer = response.choices[0].message.content  # type: ignore
+      print(f"OpenAI response:\n{answer}\n\n")
     except Exception as err:
       print("OpenAI API error:", err)
       answer = (

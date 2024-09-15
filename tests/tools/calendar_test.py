@@ -1,7 +1,28 @@
+import pytest
 from datetime import datetime, timezone
 from os import path
 
-from minerva.tools.calendar import query_calendar, parse_ics
+from freezegun import freeze_time
+
+from minerva.tools.calendar import query_calendar, parse_ics, CalendarTool
+
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from threading import Thread
+
+
+def with_http_file_server(fn_async):
+  async def wrapper(*args, **kwargs):
+    # using port 0 to get a random free port
+    server_address = ("", 0)
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    server_thread = Thread(target=httpd.serve_forever)
+    try:
+      server_thread.start()
+      await fn_async(*args, **kwargs, httpd=httpd)
+    finally:
+      httpd.shutdown()
+      server_thread.join()
+  return wrapper
 
 
 def test_query_ics():
@@ -41,4 +62,56 @@ def test_query_ics():
   assert events[2].end.tzname() == "+04"
   assert events[2].start == datetime(2024, 9, 5, 11, 0, tzinfo=events[2].start.tzinfo)
   assert events[2].end == datetime(2024, 9, 5, 12, 0, tzinfo=events[2].end.tzinfo)
-  assert events[2].recurrence_rule == None
+  assert events[2].recurrence_rule is None
+
+
+@freeze_time("2024-09-15")
+@pytest.mark.asyncio
+@with_http_file_server
+async def test_calendar_tool(httpd: HTTPServer):
+  calendar_tool = CalendarTool(
+      f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
+  events = await calendar_tool.query(14)
+
+  assert events == """Event: Test repeated (2024-09-19 07:00:00+00:00 - 2024-09-19 08:00:00+00:00)
+Description: And description
+Video call: https://meet.google.com/broken-link-3"""
+
+
+@freeze_time("2024-09-15")
+@pytest.mark.asyncio
+@with_http_file_server
+async def test_calendar_tool_no_events(httpd: HTTPServer):
+  calendar_tool = CalendarTool(
+      f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
+  events = await calendar_tool.query(1)
+
+  assert events == """No events found"""
+
+
+@freeze_time("2024-09-15")
+@pytest.mark.asyncio
+@with_http_file_server
+async def test_calendar_tool_crashes_if_zero_days(httpd: HTTPServer):
+  calendar_tool = CalendarTool(
+      f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
+
+  try:
+    await calendar_tool.query(0)
+    assert False
+  except ValueError as e:
+    assert str(e) == "next_days must be at least 1"
+
+
+@freeze_time("2024-09-15")
+@pytest.mark.asyncio
+@with_http_file_server
+async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
+  calendar_tool = CalendarTool(
+      f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
+
+  try:
+    await calendar_tool.query(367)
+    assert False
+  except ValueError as e:
+    assert str(e) == "next_days must be at most 366"

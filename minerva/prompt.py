@@ -76,7 +76,7 @@ Tool response will be added to the conversation history as:
 or, if the tool cannot be found
 {format_tool_username("ERROR")}: error message
 
-Calls to tools and tool responses are visible only to you. You will decide what to do with the tool response and what to share with the user.
+IMPORTANT: Calls to tools and tool responses are visible only to you. You will decide what to do with the tool response and what to share with the user.
 
 Do not mention tools in your responses.
 
@@ -96,6 +96,8 @@ Action:
 The action can either be "{ModelAction.USE_TOOL}" or "{ModelAction.RESPOND}."
 
 Then, provide the content of your message starting with the newline.
+
+System ERROR messages are prefixed with "ERROR:" and are visible to you only. If you get an error, first fulfilling the user request again.
 
 For example:
 {ACTION_PREFIX} {ModelAction.USE_TOOL}

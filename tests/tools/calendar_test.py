@@ -1,6 +1,8 @@
 import pytest
 from datetime import datetime, timezone
 from os import path
+import asyncio
+import os
 
 from freezegun import freeze_time
 
@@ -115,3 +117,66 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
     assert False
   except ValueError as e:
     assert str(e) == "next_days must be at most 366"
+
+class MockHTTPRequestHandler(SimpleHTTPRequestHandler):
+    """Custom handler to serve different calendar files for testing."""
+    
+    def do_GET(self):
+        if "test-calendar-1.ics" in self.path:
+            ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-1.ics")
+        elif "test-calendar-2.ics" in self.path:
+            ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-2.ics")
+        else:
+            self.send_error(404, "File not found")
+            return
+
+        with open(ics_path, 'rb') as f:
+            ics_content = f.read()
+
+        self.send_response(200)
+        self.send_header("Content-type", "text/calendar")
+        self.end_headers()
+        self.wfile.write(ics_content)
+
+
+def with_http_file_server(fn_async):
+    async def wrapper(*args, **kwargs):
+        server_address = ("", 0)
+        httpd = HTTPServer(server_address, MockHTTPRequestHandler)
+        server_thread = Thread(target=httpd.serve_forever)
+        try:
+            server_thread.start()
+            await fn_async(*args, **kwargs, httpd=httpd)
+        finally:
+            httpd.shutdown()
+            server_thread.join()
+    return wrapper
+
+
+@freeze_time("2024-09-15 08:00:00")
+@pytest.mark.asyncio
+@with_http_file_server
+async def test_calendar_tool_refetches_calendar(httpd: HTTPServer):
+    """Test that CalendarTool refetches the calendar and responds to updates."""
+    
+    # Set a short refetch interval for testing (1 minute)
+    os.environ["CALENDAR_REFETCH_INTERVAL"] = "1"
+    
+    # First, serve the initial calendar file (test-calendar-1.ics)
+    calendar_tool = CalendarTool(f"http://localhost:{httpd.server_port}/test-calendar-1.ics")
+    
+    # Query the calendar before refetch
+    events = await calendar_tool.query(14)
+    assert "Test repeated" in events  # Verify the initial data from the first file
+    
+    # Simulate time passing to trigger refetch (move time forward by 2 minutes)
+    with freeze_time("2024-09-15 08:02:00"):
+        # Now, the server should serve a different calendar file (test-calendar-2.ics)
+        calendar_tool.calendar_url = f"http://localhost:{httpd.server_port}/test-calendar-2.ics"
+        
+        # Allow some time for the refetch to happen
+        await asyncio.sleep(65)  # Wait more than 1 minute to ensure refetch happens
+        
+        # Query the calendar again after refetch
+        updated_events = await calendar_tool.query(14)
+        assert "Test new event" in updated_events  # Verify the updated data from the second file

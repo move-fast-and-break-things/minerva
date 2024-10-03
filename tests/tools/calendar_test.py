@@ -120,21 +120,27 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
 
 class MockUpdatingCalendarHTTPRequestHandler(SimpleHTTPRequestHandler):  
 
-    """Custom handler to serve different calendar files for testing."""
+  """Custom handler to serve different calendar files for testing."""
     
-    def do_GET(self):
-      if self.request_number == 0:  
-          ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-1.ics")  
-      else:  
-          ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-2.ics")  
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.request_number = 0
+    
+  def do_GET(self):
+    if self.request_number == 0:  
+      ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-1.ics")  
+    else:  
+      ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-2.ics")  
 
-      with open(ics_path, 'rb') as f:
-            ics_content = f.read()
+    with open(ics_path, 'rb') as f:
+      ics_content = f.read()
 
-      self.send_response(200)
-      self.send_header("Content-type", "text/calendar")
-      self.end_headers()
-      self.wfile.write(ics_content)
+    self.send_response(200)
+    self.send_header("Content-type", "text/calendar")
+    self.end_headers()
+    self.wfile.write(ics_content)
+
+    self.request_number += 1
 
 
 def with_updating_calendar_http_file_server(fn_async):

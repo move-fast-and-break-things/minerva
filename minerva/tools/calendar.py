@@ -85,7 +85,7 @@ class CalendarTool:
     while True:
       await self._fetch_calendar()
       print(f"Refetched calendar at {datetime.now()}")
-      await asyncio.sleep(self.refetch_interval * 60)  # Sleep for interval in seconds
+      await asyncio.sleep(self.refetch_interval_min * 60)  # Sleep for interval in seconds
 
   async def query(self, next_days: int) -> str:
     """Query the event calendar for the next `next_days` days.

@@ -1,3 +1,5 @@
+import asyncio
+import os
 from datetime import datetime, timedelta, timezone
 from typing import NamedTuple, Optional
 import icalendar
@@ -15,8 +17,8 @@ class Event(NamedTuple):
 
   def __str__(self):
     return f"""Event: {self.summary} ({self.start.astimezone(tz=timezone.utc)} - {self.end.astimezone(tz=timezone.utc)})
-Description: {self.description}
-Video call: {self.meet_url}"""  # noqa: E501
+  Description: {self.description}
+  Video call: {self.meet_url}"""  # noqa: E501
 
 
 def _trim_google_meet_links_from_description(description: str) -> str:
@@ -56,10 +58,34 @@ def query_calendar(cal: icalendar.Calendar, date_from: datetime, date_to: dateti
 
 class CalendarTool:
   def __init__(self, calendar_url: str):
-    calendar_request = httpx.get(calendar_url)
-    calendar_request.raise_for_status()
-    ics_content = calendar_request.text
-    self.cal = parse_ics(ics_content)
+    self.calendar_url = calendar_url
+    self.cal = None  # Initialize the calendar object as None
+    self.refetch_interval_min = int(os.getenv("CALENDAR_REFETCH_INTERVAL_MIN", 15))  # Fetch interval from env, default 15 minutes
+    self._refetch_task = asyncio.create_task(self._refetch_calendar_periodically())  # Start background task to refetch
+
+  def stop_refetch_task(self):
+    """Stop the background task that refetches the calendar."""
+    if self._refetch_task:
+      self._refetch_task.cancel()
+      self._refetch_task = None
+
+  async def _fetch_calendar(self):
+    """Fetch the calendar from the provided URL."""
+    try:
+      async with httpx.AsyncClient() as client:
+        calendar_request = await client.get(self.calendar_url)
+      calendar_request.raise_for_status()
+      ics_content = calendar_request.text
+      self.cal = parse_ics(ics_content)
+    except httpx.RequestError as e:
+      print(f"An error occurred while fetching the calendar: {e}")
+
+  async def _refetch_calendar_periodically(self):
+    """Periodically refetch the calendar data based on the configured interval."""
+    while True:
+      await self._fetch_calendar()
+      print(f"Refetched calendar at {datetime.now()}")
+      await asyncio.sleep(self.refetch_interval_min * 60)  # Sleep for interval in seconds
 
   async def query(self, next_days: int) -> str:
     """Query the event calendar for the next `next_days` days.
@@ -72,7 +98,13 @@ class CalendarTool:
       raise ValueError("next_days must be at least 1")
     if next_days > 366:
       raise ValueError("next_days must be at most 366")
+        
+    # Ensure the calendar has been fetched before querying
+    if self.cal is None:
+      await self._fetch_calendar()
+        
     events = query_calendar(self.cal, datetime.now(), timedelta(days=next_days))
     if not events:
       return "No events found"
     return "\n\n".join([str(event) for event in events])
+

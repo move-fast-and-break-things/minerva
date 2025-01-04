@@ -1,3 +1,4 @@
+from asyncio import sleep
 import pytest
 from datetime import datetime, timezone
 from os import path
@@ -9,24 +10,55 @@ from minerva.tools.calendar import query_calendar, parse_ics, CalendarTool
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
 
+DEFAULT_ICS_PATH = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar.ics")
 
-def with_http_file_server(fn_async):
-  async def wrapper(*args, **kwargs):
-    # using port 0 to get a random free port
-    server_address = ("", 0)
-    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
-    server_thread = Thread(target=httpd.serve_forever)
-    try:
-      server_thread.start()
-      await fn_async(*args, **kwargs, httpd=httpd)
-    finally:
-      httpd.shutdown()
-      server_thread.join()
-  return wrapper
+
+def getMockCalendarRequestHandler(ics_paths: list[str]):
+  # because http server recreates the request handler every time, we use this
+  # request handler fabric to keep track of the variables which we want to share
+  # between multiple requests
+  ics_paths = ics_paths or [DEFAULT_ICS_PATH]
+  requests_served_count = 0
+
+  class MockCalendarRequestHandler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+      nonlocal requests_served_count
+
+      ics_path = ics_paths[requests_served_count if requests_served_count < len(ics_paths) else -1]
+
+      with open(ics_path, 'rb') as f:
+        ics_content = f.read()
+
+      self.send_response(200)
+      self.send_header("Content-type", "text/calendar")
+      self.end_headers()
+      self.wfile.write(ics_content)
+
+      requests_served_count += 1
+
+  return MockCalendarRequestHandler
+
+
+def with_http_file_server(ics_paths: list[str] = None):
+  def decorator(fn_async):
+    async def wrapper(*args, **kwargs):
+      # using port 0 to get a random free port
+      server_address = ("", 0)
+      MockCalendarRequestHandler = getMockCalendarRequestHandler(ics_paths)
+      httpd = HTTPServer(server_address, MockCalendarRequestHandler)
+      server_thread = Thread(target=httpd.serve_forever)
+      try:
+        server_thread.start()
+        await fn_async(*args, **kwargs, httpd=httpd)
+      finally:
+        httpd.shutdown()
+        server_thread.join()
+    return wrapper
+  return decorator
 
 
 def test_query_ics():
-  ics_path = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar.ics")
+  ics_path = DEFAULT_ICS_PATH
   with open(ics_path) as f:
     ics = f.read()
     cal = parse_ics(ics)
@@ -67,7 +99,7 @@ def test_query_ics():
 
 @freeze_time("2024-09-15")
 @pytest.mark.asyncio
-@with_http_file_server
+@with_http_file_server()
 async def test_calendar_tool(httpd: HTTPServer):
   calendar_tool = CalendarTool(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
@@ -80,7 +112,7 @@ Video call: https://meet.google.com/broken-link-3"""
 
 @freeze_time("2024-09-15")
 @pytest.mark.asyncio
-@with_http_file_server
+@with_http_file_server()
 async def test_calendar_tool_no_events(httpd: HTTPServer):
   calendar_tool = CalendarTool(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
@@ -91,7 +123,7 @@ async def test_calendar_tool_no_events(httpd: HTTPServer):
 
 @freeze_time("2024-09-15")
 @pytest.mark.asyncio
-@with_http_file_server
+@with_http_file_server()
 async def test_calendar_tool_crashes_if_zero_days(httpd: HTTPServer):
   calendar_tool = CalendarTool(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
@@ -105,7 +137,7 @@ async def test_calendar_tool_crashes_if_zero_days(httpd: HTTPServer):
 
 @freeze_time("2024-09-15")
 @pytest.mark.asyncio
-@with_http_file_server
+@with_http_file_server()
 async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
   calendar_tool = CalendarTool(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
@@ -115,3 +147,31 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
     assert False
   except ValueError as e:
     assert str(e) == "next_days must be at most 366"
+
+
+@freeze_time("2024-09-15", as_arg=True, tick=True)
+@pytest.mark.asyncio
+@with_http_file_server([
+    DEFAULT_ICS_PATH,
+    DEFAULT_ICS_PATH,
+    path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-updated.ics"),
+])
+async def test_calendar_tool_refetches_calendar(frozen_time, httpd: HTTPServer):
+  calendar_tool = CalendarTool(
+      f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
+  # let the async refresh loop initialize
+  await sleep(0.1)
+
+  events = await calendar_tool.query(14)
+
+  assert events == """Event: Test repeated (2024-09-19 07:00:00+00:00 - 2024-09-19 08:00:00+00:00)
+Description: And description
+Video call: https://meet.google.com/broken-link-3"""
+
+  frozen_time.tick(60 * 20)
+  # let the async refresh loop refetch the calendar
+  await sleep(0.1)
+
+  events = await calendar_tool.query(14)
+
+  assert events == """No events found"""

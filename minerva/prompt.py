@@ -120,9 +120,9 @@ class Prompt:
 
   def format(self, message_history: MessageHistory) -> str:
     return (
-      f"{self.prompt}\n\n"
-      f"Current datetime in UTC is {datetime.now().astimezone(timezone.utc)}\n\n"
-      f"CONVERSATION HISTORY:\n\n{message_history}"
+        f"{self.prompt}\n\n"
+        f"Current datetime in UTC is {datetime.now().astimezone(timezone.utc)}\n\n"
+        f"CONVERSATION HISTORY:\n\n{message_history}"
     )
 
   def __str__(self):

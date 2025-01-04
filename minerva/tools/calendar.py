@@ -1,8 +1,10 @@
+import asyncio
 from datetime import datetime, timedelta, timezone
 from typing import NamedTuple, Optional
 import icalendar
 import recurring_ical_events
 import httpx
+from minerva.config import CALENDAR_REFRESH_INTERVAL_MIN
 
 
 class Event(NamedTuple):
@@ -60,6 +62,19 @@ class CalendarTool:
     calendar_request.raise_for_status()
     ics_content = calendar_request.text
     self.cal = parse_ics(ics_content)
+    self._refetch_task = asyncio.create_task(self._refetch_calendar_loop(calendar_url))
+
+  async def _refetch_calendar_loop(self, calendar_url):
+    while True:
+      try:
+        async with httpx.AsyncClient() as client:
+          calendar_request = await client.get(calendar_url)
+        calendar_request.raise_for_status()
+        ics_content = calendar_request.text
+        self.cal = parse_ics(ics_content)
+      except httpx.RequestError as e:
+        print(f"An error occurred while fetching the calendar: {e}")
+      await asyncio.sleep(CALENDAR_REFRESH_INTERVAL_MIN * 60)
 
   async def query(self, next_days: int) -> str:
     """Query the event calendar for the next `next_days` days.

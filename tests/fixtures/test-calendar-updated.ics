@@ -1,0 +1,50 @@
+BEGIN:VCALENDAR
+PRODID:-//Google Inc//Google Calendar 70.9054//EN
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Test calendar
+X-WR-TIMEZONE:Asia/Dubai
+BEGIN:VTIMEZONE
+TZID:Asia/Dubai
+X-LIC-LOCATION:Asia/Dubai
+BEGIN:STANDARD
+TZOFFSETFROM:+0400
+TZOFFSETTO:+0400
+TZNAME:GMT+4
+DTSTART:19700101T000000
+END:STANDARD
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTART:20240904T084500Z
+DTEND:20240905T020000Z
+DTSTAMP:20240902T074210Z
+UID:broken-uid-1@google.com
+X-GOOGLE-CONFERENCE:https://meet.google.com/broken-link-1
+CREATED:20240902T074020Z
+DESCRIPTION:‏الانضمام من خلال Google Meet: https://meet.google.com/broken-link
+ -1\n\n‏تعرَّف على مزيد من المعلومات حول Meet على الرابط: https://support.
+ google.com/a/users/answer/9282720.
+LAST-MODIFIED:20240902T074020Z
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Test multi-day
+TRANSP:OPAQUE
+END:VEVENT
+BEGIN:VEVENT
+DTSTART:20240902T100000Z
+DTEND:20240902T110000Z
+DTSTAMP:20240902T074210Z
+UID:broken-uid-2@google.com
+X-GOOGLE-CONFERENCE:https://meet.google.com/broken-link-2
+CREATED:20240902T073940Z
+DESCRIPTION:Test description.\n\nMultiline.\n\n‏الانضمام من خلال Google Mee
+ t: https://meet.google.com/broken-link-2\n\n‏تعرَّف على مزيد من المعلومات حو
+ ل Meet على الرابط: https://support.google.com/a/users/answer/9282720.
+LAST-MODIFIED:20240902T074027Z
+SEQUENCE:0
+STATUS:CONFIRMED
+SUMMARY:Test event 1
+TRANSP:OPAQUE
+END:VEVENT
+END:VCALENDAR

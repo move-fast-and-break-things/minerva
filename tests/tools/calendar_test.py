@@ -153,7 +153,6 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
 @pytest.mark.asyncio
 @with_http_file_server([
     DEFAULT_ICS_PATH,
-    DEFAULT_ICS_PATH,
     path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-updated.ics"),
 ])
 async def test_calendar_tool_refetches_calendar(frozen_time, httpd: HTTPServer):

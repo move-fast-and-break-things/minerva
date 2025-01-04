@@ -66,6 +66,9 @@ class CalendarTool:
 
   async def _refetch_calendar_loop(self, calendar_url):
     while True:
+      # no need to fetch immediately after the first fetch
+      # we fetch first in the constructor, blocking, before starting this task
+      await asyncio.sleep(CALENDAR_REFRESH_INTERVAL_MIN * 60)
       try:
         async with httpx.AsyncClient() as client:
           calendar_request = await client.get(calendar_url)
@@ -74,7 +77,6 @@ class CalendarTool:
         self.cal = parse_ics(ics_content)
       except httpx.RequestError as e:
         print(f"An error occurred while fetching the calendar: {e}")
-      await asyncio.sleep(CALENDAR_REFRESH_INTERVAL_MIN * 60)
 
   async def query(self, next_days: int) -> str:
     """Query the event calendar for the next `next_days` days.

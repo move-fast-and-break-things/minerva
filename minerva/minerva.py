@@ -153,7 +153,7 @@ class Minerva:
           temperature=0.8,
           frequency_penalty=0.7,
           presence_penalty=0.3,
-          max_tokens=OPENAI_RESPONSE_MAX_TOKENS,
+          max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
           user=f"telegram-{message.from_user.id}",
       )
       answer = response.choices[0].message.content  # type: ignore

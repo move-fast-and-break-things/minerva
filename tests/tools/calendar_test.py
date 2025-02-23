@@ -5,7 +5,7 @@ from os import path
 
 from freezegun import freeze_time
 
-from minerva.tools.calendar import query_calendar, parse_ics, CalendarTool
+from minerva.tools.calendar import query_downloaded_calendar, parse_ics, get_query_calendar
 
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
@@ -63,7 +63,7 @@ def test_query_ics():
     ics = f.read()
     cal = parse_ics(ics)
 
-  events = query_calendar(
+  events = query_downloaded_calendar(
       cal,
       datetime(2024, 9, 1, tzinfo=timezone.utc),
       datetime(2024, 9, 6, tzinfo=timezone.utc),
@@ -101,9 +101,9 @@ def test_query_ics():
 @pytest.mark.asyncio
 @with_http_file_server()
 async def test_calendar_tool(httpd: HTTPServer):
-  calendar_tool = CalendarTool(
+  query_calendar = get_query_calendar(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
-  events = await calendar_tool.query(14)
+  events = await query_calendar(14)
 
   assert events == """Event: Test repeated (2024-09-19 07:00:00+00:00 - 2024-09-19 08:00:00+00:00)
 Description: And description
@@ -114,9 +114,9 @@ Video call: https://meet.google.com/broken-link-3"""
 @pytest.mark.asyncio
 @with_http_file_server()
 async def test_calendar_tool_no_events(httpd: HTTPServer):
-  calendar_tool = CalendarTool(
+  query_calendar = get_query_calendar(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
-  events = await calendar_tool.query(1)
+  events = await query_calendar(1)
 
   assert events == """No events found"""
 
@@ -125,11 +125,11 @@ async def test_calendar_tool_no_events(httpd: HTTPServer):
 @pytest.mark.asyncio
 @with_http_file_server()
 async def test_calendar_tool_crashes_if_zero_days(httpd: HTTPServer):
-  calendar_tool = CalendarTool(
+  query_calendar = get_query_calendar(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
 
   try:
-    await calendar_tool.query(0)
+    await query_calendar(0)
     assert False
   except ValueError as e:
     assert str(e) == "next_days must be at least 1"
@@ -139,11 +139,11 @@ async def test_calendar_tool_crashes_if_zero_days(httpd: HTTPServer):
 @pytest.mark.asyncio
 @with_http_file_server()
 async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
-  calendar_tool = CalendarTool(
+  query_calendar = get_query_calendar(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
 
   try:
-    await calendar_tool.query(367)
+    await query_calendar(367)
     assert False
   except ValueError as e:
     assert str(e) == "next_days must be at most 366"
@@ -156,12 +156,12 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
     path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-updated.ics"),
 ])
 async def test_calendar_tool_refetches_calendar(frozen_time, httpd: HTTPServer):
-  calendar_tool = CalendarTool(
+  query_calendar = get_query_calendar(
       f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics")
   # let the async refresh loop initialize
   await sleep(0.1)
 
-  events = await calendar_tool.query(14)
+  events = await query_calendar(14)
 
   assert events == """Event: Test repeated (2024-09-19 07:00:00+00:00 - 2024-09-19 08:00:00+00:00)
 Description: And description
@@ -171,6 +171,6 @@ Video call: https://meet.google.com/broken-link-3"""
   # let the async refresh loop refetch the calendar
   await sleep(0.1)
 
-  events = await calendar_tool.query(14)
+  events = await query_calendar(14)
 
   assert events == """No events found"""

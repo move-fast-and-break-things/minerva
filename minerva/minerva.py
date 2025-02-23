@@ -47,9 +47,9 @@ class Minerva:
     }
 
     if CALENDAR_ICS_URL:
-      from minerva.tools.calendar import CalendarTool
-      calendar_tool = CalendarTool(CALENDAR_ICS_URL)
-      self.tools["query_calendar"] = calendar_tool.query
+      from minerva.tools.calendar import get_query_calendar
+      query_calendar = get_query_calendar(CALENDAR_ICS_URL)
+      self.tools["query_calendar"] = query_calendar
 
   async def initialize(self) -> None:
     self.me = cast(TelegramUser, await self.application.bot.get_me())

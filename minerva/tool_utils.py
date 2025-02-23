@@ -1,12 +1,14 @@
 from inspect import signature
-from typing import NamedTuple
+from typing import Any, Coroutine, NamedTuple, Callable, cast
 import pyparsing as pp
 
 
 TOOL_PREFIX = "TOOL-"
 
+GenericToolFn = Callable[..., Coroutine[Any, Any, str]]
 
-def format_tool(name: str, tool: callable) -> str:
+
+def format_tool(name: str, tool: GenericToolFn) -> str:
   return f"""Name: {name}
 Signature: {signature(tool)}
 Description: {tool.__doc__}
@@ -15,10 +17,10 @@ Description: {tool.__doc__}
 
 class ToolCall(NamedTuple):
   tool_name: str
-  args: list[any]
+  args: list[Any]
 
 
-def parse_tool_call(message: str, tools: dict[str, callable]) -> ToolCall:
+def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
   """Parse a tool call message and return a ToolCall object.
 
   The tool call message format:
@@ -42,8 +44,8 @@ def parse_tool_call(message: str, tools: dict[str, callable]) -> ToolCall:
     + pp.Suppress(")")
   )
   parsed = tool_call.parseString(message)
-  tool_name = parsed["tool_name"]
-  args = parsed[1:]
+  tool_name = cast(str, parsed["tool_name"])
+  args = cast(list[Any], parsed[1:])
 
   try:
     tool = tools[tool_name]

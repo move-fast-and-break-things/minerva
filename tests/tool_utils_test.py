@@ -1,18 +1,18 @@
-from minerva.tool_utils import ToolCall, format_tool, parse_tool_call
+from minerva.tool_utils import GenericToolFn, ToolCall, format_tool, parse_tool_call
 
 
-def sum(a: int, b: int) -> int:
+async def sum(a: int, b: int) -> str:
   """Sum two numbers."""
-  return a + b
+  return str(a + b)
 
 
-def do_x():
+async def do_x() -> str:
   """Does X."""
-  pass
+  return "done"
 
 
-def fetch(url: str) -> str:
-  pass
+async def fetch(url: str) -> str:
+  return "this is a mock function"
 
 
 def test_format_tool():
@@ -36,7 +36,7 @@ Description: None
 
 
 def test_parse_tool_call():
-  tools = {
+  tools: dict[str, GenericToolFn] = {
     "sum": sum,
     "do_x": do_x,
   }
@@ -49,7 +49,7 @@ def test_parse_tool_call():
 
 
 def test_parse_tool_call_erros_if_tool_doesnt_exist():
-  tools = {
+  tools: dict[str, GenericToolFn] = {
     "sum": sum,
   }
 
@@ -61,7 +61,7 @@ def test_parse_tool_call_erros_if_tool_doesnt_exist():
 
 
 def test_parse_tool_call_errors_if_number_of_args_doesnt_match_signature():
-  tools = {
+  tools: dict[str, GenericToolFn] = {
     "sum": sum,
   }
 
@@ -73,7 +73,7 @@ def test_parse_tool_call_errors_if_number_of_args_doesnt_match_signature():
 
 
 def test_parse_tool_call_supports_string_arguments_with_single_quote():
-  tools = {
+  tools: dict[str, GenericToolFn] = {
     "fetch": fetch,
   }
 
@@ -82,7 +82,7 @@ def test_parse_tool_call_supports_string_arguments_with_single_quote():
 
 
 def test_parse_tool_call_supports_string_arguments_with_double_quote():
-  tools = {
+  tools: dict[str, GenericToolFn] = {
     "fetch": fetch,
   }
 
@@ -91,7 +91,7 @@ def test_parse_tool_call_supports_string_arguments_with_double_quote():
 
 
 def test_parse_tool_call_supports_arguments_with_dashes():
-  tools = {
+  tools: dict[str, GenericToolFn] = {
     "fetch": fetch,
   }
 

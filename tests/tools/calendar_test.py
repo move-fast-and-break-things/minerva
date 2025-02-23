@@ -1,9 +1,11 @@
 from asyncio import sleep
+from typing import Any, Callable, Optional
 import pytest
 from datetime import datetime, timezone
 from os import path
 
 from freezegun import freeze_time
+from freezegun.api import FrozenDateTimeFactory
 
 from minerva.tools.calendar import (
   query_downloaded_calendar,
@@ -17,7 +19,7 @@ from threading import Thread
 DEFAULT_ICS_PATH = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar.ics")
 
 
-def getMockCalendarRequestHandler(ics_paths: list[str]):
+def getMockCalendarRequestHandler(ics_paths: Optional[list[str]] = None):
   # because http server recreates the request handler every time, we use this
   # request handler fabric to keep track of the variables which we want to share
   # between multiple requests
@@ -43,9 +45,9 @@ def getMockCalendarRequestHandler(ics_paths: list[str]):
   return MockCalendarRequestHandler
 
 
-def with_http_file_server(ics_paths: list[str] = None):
-  def decorator(fn_async):
-    async def wrapper(*args, **kwargs):
+def with_http_file_server(ics_paths: Optional[list[str]] = None):
+  def decorator(fn_async: Callable[..., Any]):
+    async def wrapper(*args: tuple[Any, ...], **kwargs: dict[str, Any]):
       # using port 0 to get a random free port
       server_address = ("", 0)
       MockCalendarRequestHandler = getMockCalendarRequestHandler(ics_paths)
@@ -170,7 +172,9 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
     path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-updated.ics"),
   ]
 )
-async def test_calendar_tool_refetches_calendar(frozen_time, httpd: HTTPServer):
+async def test_calendar_tool_refetches_calendar(
+  frozen_time: FrozenDateTimeFactory, httpd: HTTPServer
+):
   query_calendar = get_query_calendar(
     f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics"
   )

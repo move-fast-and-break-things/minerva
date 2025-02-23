@@ -19,6 +19,8 @@ icalendar = "^5.0.13"
 recurring-ical-events = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
+lxml-stubs = "^0.5.1"
+pyright = {extras = ["nodejs"], version = "^1.1.394"}
 pytest = "^8.3.2"
 pytest-asyncio = "^0.24.0"
 ruff = "^0.9.7"

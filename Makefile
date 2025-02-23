@@ -6,3 +6,6 @@ lint-fix:
 
 test:
 	poetry run pytest tests
+
+type-check:
+	poetry run pyright .

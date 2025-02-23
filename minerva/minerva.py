@@ -1,3 +1,4 @@
+import json
 from typing import cast
 
 from openai import AsyncOpenAI
@@ -6,9 +7,11 @@ from telegram import Update, Message as TelegramMessage, User as TelegramUser
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
 from telegram.ext import Application, ContextTypes, MessageHandler, filters, ChatMemberHandler
 
+from minerva.format_chat_history_for_openai import format_chat_history_for_openai
+from minerva.get_image_from_telegram_photo import get_image_from_telegram_photo
 from minerva.config import AI_NAME, CALENDAR_ICS_URL
 from minerva.markdown_splitter import split_markdown
-from minerva.message_history import Message, MessageHistory, trim_by_token_size
+from minerva.message_history import ImageContent, Message, MessageHistory, trim_by_token_size
 from minerva.prompt import USERNAMELESS_ID_PREFIX, ModelAction, Prompt, parse_model_message
 from minerva.tools.fetch_html import fetch_html
 from minerva.tool_utils import format_tool_username, parse_tool_call
@@ -55,7 +58,7 @@ class Minerva:
 
     print("Starting Minerva with prompt:\n", self.prompt)
 
-    self.application.add_handler(MessageHandler(filters.TEXT, self.on_message))
+    self.application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO, self.on_message))
     self.application.add_handler(ChatMemberHandler(
         self.on_chat_member_update, chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER))
 
@@ -83,8 +86,8 @@ class Minerva:
     if not message:
       return
 
-    if not message.text:
-      # Minerva only support text messages
+    if not message.text and not message.photo:
+      # only text and photo messages are supported
       return
 
     if message.chat.id != self.chat_id:
@@ -94,19 +97,39 @@ class Minerva:
       return
 
     topic_id = self._get_topic_id(message)
+    should_respond = self._is_reply_to_me(message) and not self._is_mentioned(message)
+    if should_respond:
+      # send typing notification before starting to download the images because
+      # downloading may take some time and we want to let the user that we
+      # started processing their request
+      await message.chat.send_chat_action(ChatAction.TYPING, message_thread_id=topic_id)
+
+    message_author = message.from_user.username or f"{USERNAMELESS_ID_PREFIX}{message.from_user.id}"
+    history_message: Message = None
+    if message.text:
+      history_message = Message(author=message_author, content=message.text)
+    elif message.photo:
+      history_message = Message(
+          author=message_author,
+          content=ImageContent(
+              images=[await get_image_from_telegram_photo(self.application.bot, message.photo)],
+              text=message.caption,
+          )
+      )
+      # If the user uploads multiple photos in a single message, Telegram API
+      # will emit different message events for them
+      # TODO(yurij): wait for other photos here
+    else:
+      raise ValueError("Unsupported message type")
+
     # Add message to chat history
     if topic_id not in self.chat_histories:
       self.chat_histories[topic_id] = MessageHistory(str(self.prompt))
     chat_history = self.chat_histories[topic_id]
-    chat_history.add(Message(
-        message.from_user.username or f"{USERNAMELESS_ID_PREFIX}{message.from_user.id}",
-        message.text,
-    ))
+    chat_history.add(history_message)
 
     if not self._is_reply_to_me(message) and not self._is_mentioned(message):
       return
-
-    await message.chat.send_chat_action(ChatAction.TYPING, message_thread_id=topic_id)
     await self._reply_to_message(message, chat_history)
 
   async def _reply_to_message(
@@ -119,14 +142,14 @@ class Minerva:
       call_info = ReplyToMessageCallInfo()
 
     try:
-      prompt = self.prompt.format(chat_history)
+      prompt = str(self.prompt)
       print(f"OpenAPI prompt:\n{prompt}\n\n")
+      messages = format_chat_history_for_openai(prompt, chat_history)
+      print(f"Chat history:\n{json.dumps(messages, indent=2)}\n\n")
 
       response = await self.openai.chat.completions.create(
           model=self.openai_model,
-          messages=[
-              {"role": "system", "content": prompt},
-          ],
+          messages=messages,
           temperature=0.8,
           frequency_penalty=0.7,
           presence_penalty=0.3,

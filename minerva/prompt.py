@@ -1,8 +1,6 @@
 from typing import NamedTuple
 from enum import StrEnum
-from minerva.message_history import MessageHistory
 from minerva.tool_utils import format_tool, format_tool_username
-from datetime import datetime, timezone
 
 USERNAMELESS_ID_PREFIX = "id-"
 ACTION_PREFIX = "Action:"
@@ -117,13 +115,6 @@ class Prompt:
       tools: dict[str, callable],
   ):
     self.prompt = get_base_prompt(ai_name, ai_username, tools)
-
-  def format(self, message_history: MessageHistory) -> str:
-    return (
-        f"{self.prompt}\n\n"
-        f"Current datetime in UTC is {datetime.now().astimezone(timezone.utc)}\n\n"
-        f"CONVERSATION HISTORY:\n\n{message_history}"
-    )
 
   def __str__(self):
     return self.prompt

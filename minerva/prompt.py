@@ -103,7 +103,7 @@ tool("arg1_value", 42)
 
 Or:
 {ACTION_PREFIX} {ModelAction.RESPOND}
-Hi!
+The messages from you that will appear in the chat.
 """  # noqa: E501
 
 

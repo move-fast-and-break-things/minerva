@@ -17,13 +17,13 @@ async def fetch(url: str) -> str:
 
 def test_format_tool():
   expected_sum = """Name: sum
-Signature: (a: int, b: int) -> int
+Signature: (a: int, b: int) -> str
 Description: Sum two numbers.
 """
   assert format_tool("sum", sum) == expected_sum
 
   expected_do_x = """Name: do_x
-Signature: ()
+Signature: () -> str
 Description: Does X.
 """
   assert format_tool("do_x", do_x) == expected_do_x

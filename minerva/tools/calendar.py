@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, cast
 import icalendar
 import recurring_ical_events  # type: ignore
 import httpx
@@ -36,12 +36,14 @@ def _trim_google_meet_links_from_description(description: str) -> str:
   return description
 
 
-def parse_ics(ics_content: str) -> icalendar.Component:
-  return icalendar.Calendar.from_ical(ics_content)
+def parse_ics(ics_content: str) -> icalendar.Calendar:
+  # `from_ical` returns the type `icalendar.Component`, which we cannot import
+  # from `icalendar`; it works great with the `icalendar.Calendar` type
+  return cast(icalendar.Calendar, icalendar.Calendar.from_ical(ics_content))
 
 
 def query_downloaded_calendar(
-  cal: icalendar.Component,
+  cal: icalendar.Calendar,
   date_from: datetime,
   date_to: datetime | timedelta,
 ) -> list[Event]:

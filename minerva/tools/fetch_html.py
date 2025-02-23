@@ -1,11 +1,12 @@
+from typing import Any
 import httpx
 import lxml
 import lxml.html
-import lxml.html.clean
+import lxml.html.clean  # type: ignore
 
 TIMEOUT_SEC = 2
 
-LXML_CLEANER = lxml.html.clean.Cleaner(
+LXML_CLEANER: Any = lxml.html.clean.Cleaner(
   scripts=True,
   javascript=True,
   comments=True,

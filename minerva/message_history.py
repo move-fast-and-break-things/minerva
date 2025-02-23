@@ -34,11 +34,10 @@ def get_image_token_count(image: Image) -> int:
 def get_message_token_count(author: str, content: ContentType) -> int:
   if isinstance(content, str):
     return len(TOKENIZER.encode(f"{author}: {content}"))
-  elif isinstance(content, ImageContent):
+  else:
     text_tokens = len(TOKENIZER.encode(f"{author}: {content.text or ''}"))
     image_tokens = sum(get_image_token_count(image) for image in content.images)
     return text_tokens + image_tokens
-  raise ValueError(f"Unsupported content type: {type(content)}")
 
 
 class Message:
@@ -49,7 +48,7 @@ class Message:
 
 
 class MessageHistory:
-  def __init__(self, prompt_str: str, token_limit=HISTORY_MAX_TOKENS):
+  def __init__(self, prompt_str: str, token_limit: int = HISTORY_MAX_TOKENS):
     self.token_limit = token_limit
     self.history: List[Message] = []
     self.current_tokens = len(TOKENIZER.encode(prompt_str))

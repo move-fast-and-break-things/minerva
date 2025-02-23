@@ -1,6 +1,6 @@
 from typing import NamedTuple
 from enum import StrEnum
-from minerva.tool_utils import format_tool, format_tool_username
+from minerva.tool_utils import format_tool, format_tool_username, GenericToolFn
 
 USERNAMELESS_ID_PREFIX = "id-"
 ACTION_PREFIX = "Action:"
@@ -37,7 +37,7 @@ def parse_model_message(message: str) -> ModelMessage:
 def get_base_prompt(
   ai_name: str,
   ai_username: str,
-  tools: dict[str, callable],
+  tools: dict[str, GenericToolFn],
 ) -> str:
   return f"""You are {ai_name}, she/her, a Telegram AI assistant whose purpose is to help software engineers to enhance their skills and knowledge. You are good at breaking down intricate concepts and explaining them clearly and understandably. You are highly effective as a partner and a mentor. You are friendly, respectful, and have a good sense of humor. You are happy to help with any task related to software development. You may still answer when asked something unrelated to software development, but use your friendliness and humor to eventually guide the conversation back to the main topic.
 
@@ -112,7 +112,7 @@ class Prompt:
     self,
     ai_name: str,
     ai_username: str,
-    tools: dict[str, callable],
+    tools: dict[str, GenericToolFn],
   ):
     self.prompt = get_base_prompt(ai_name, ai_username, tools)
 

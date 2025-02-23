@@ -1,9 +1,9 @@
 import json
-from typing import cast
+from typing import Optional, cast
 
 from openai import AsyncOpenAI
 
-from telegram import Update, Message as TelegramMessage, User as TelegramUser
+from telegram import Update, Message as TelegramMessage, User as TelegramUser, Bot
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
 from telegram.ext import (
   Application,
@@ -30,7 +30,7 @@ from minerva.prompt import (
   parse_model_message,
 )
 from minerva.tools.fetch_html import fetch_html
-from minerva.tool_utils import format_tool_username, parse_tool_call
+from minerva.tool_utils import GenericToolFn, format_tool_username, parse_tool_call
 
 MAX_TELEGRAM_MESSAGE_LENGTH_CHAR = 2000
 OPENAI_RESPONSE_MAX_TOKENS = 1512
@@ -58,7 +58,7 @@ class Minerva:
     self.chat_histories: dict[int, MessageHistory] = {}
     self.openai = AsyncOpenAI(api_key=openai_api_key)
     self.openai_model = openai_model
-    self.tools: dict[str, callable] = {
+    self.tools: dict[str, GenericToolFn] = {
       "fetch_html": fetch_html,
     }
 
@@ -70,6 +70,9 @@ class Minerva:
 
   async def initialize(self) -> None:
     self.me = cast(TelegramUser, await self.application.bot.get_me())
+    if not self.me.username:
+      raise ValueError("Unexpected: Minerva bot doesn't have a username")
+    self.username = self.me.username
     self.username_with_mention = f"@{self.me.username}"
     self.prompt = Prompt(ai_name=AI_NAME, ai_username=self.me.username, tools=self.tools)
 
@@ -112,6 +115,9 @@ class Minerva:
       # only text and photo messages are supported
       return
 
+    if not message.from_user:
+      raise ValueError("Unexpected: message.from_user is None")
+
     if message.chat.id != self.chat_id:
       await message.reply_text("I'm sorry, I can't talk to you here.")
       if message.chat.type != ChatType.PRIVATE:
@@ -127,14 +133,16 @@ class Minerva:
       await message.chat.send_chat_action(ChatAction.TYPING, message_thread_id=topic_id)
 
     message_author = message.from_user.username or f"{USERNAMELESS_ID_PREFIX}{message.from_user.id}"
-    history_message: Message = None
+    history_message: Message
     if message.text:
       history_message = Message(author=message_author, content=message.text)
     elif message.photo:
       history_message = Message(
         author=message_author,
         content=ImageContent(
-          images=[await get_image_from_telegram_photo(self.application.bot, message.photo)],
+          images=[
+            await get_image_from_telegram_photo(cast(Bot, self.application.bot), message.photo)
+          ],
           text=message.caption,
         ),
       )
@@ -158,8 +166,11 @@ class Minerva:
     self,
     message: TelegramMessage,
     chat_history: MessageHistory,
-    call_info: ReplyToMessageCallInfo = None,
+    call_info: Optional[ReplyToMessageCallInfo] = None,
   ) -> None:
+    if not message.from_user:
+      raise Exception("Unexpected: message.from_user is None")
+
     if call_info is None:
       call_info = ReplyToMessageCallInfo()
 
@@ -178,7 +189,9 @@ class Minerva:
         max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
         user=f"telegram-{message.from_user.id}",
       )
-      answer = response.choices[0].message.content  # type: ignore
+      answer = response.choices[0].message.content
+      if not answer:
+        raise Exception("Unexpected: OpenAI response is empty")
       print(f"OpenAI response:\n{answer}\n\n")
     except Exception as err:
       print("OpenAI API error:", err)
@@ -188,14 +201,14 @@ class Minerva:
         " Could you please rephrase your question?"
       )
 
-    chat_history.add(Message(self.me.username, answer))
+    chat_history.add(Message(self.username, answer))
 
     try:
       model_message = parse_model_message(answer)
     except Exception as err:
       if call_info.retry_count >= MAX_RETRY_COUNT:
         answer = "I'm sorry, I'm having trouble understanding you right now. Could you please rephrase your question?"
-        chat_history.add(Message(self.me.username, f"Action: {ModelAction.RESPOND}\n{answer}"))
+        chat_history.add(Message(self.username, f"Action: {ModelAction.RESPOND}\n{answer}"))
         await message.reply_markdown(answer)
         return
 
@@ -226,14 +239,16 @@ class Minerva:
         # Minerva is past the tool use limit and ignored our request to reply to the user
         # Reply to the user instead of her
         if call_info.tool_use_count > MAX_TOOL_USE_COUNT:
-          message = "I'm sorry, I can't help you with that. Please ask something else."
+          max_tool_count_reached_response = (
+            "I'm sorry, I can't help you with that. Please ask something else."
+          )
           chat_history.add(
             Message(
-              self.me.username,
-              f"Action: {ModelAction.RESPOND}\n{message}",
+              self.username,
+              f"Action: {ModelAction.RESPOND}\n{max_tool_count_reached_response}",
             )
           )
-          await message.reply_markdown(message)
+          await message.reply_markdown(max_tool_count_reached_response)
           return
 
         try:
@@ -271,11 +286,15 @@ class Minerva:
         print("Unknown action:", model_message.action)
 
   def _get_topic_id(self, message: TelegramMessage) -> int:
+    if not message.message_thread_id:
+      raise ValueError("Unexpected: message has no thread id")
     return message.message_thread_id
 
   def _is_reply_to_me(self, message: TelegramMessage) -> bool:
     if not message.reply_to_message:
       return False
+    if not message.reply_to_message.from_user:
+      raise ValueError("Unexpected: reply_to_message has no from_user")
     return message.reply_to_message.from_user.id == self.me.id
 
   def _is_mentioned(self, message: TelegramMessage) -> bool:

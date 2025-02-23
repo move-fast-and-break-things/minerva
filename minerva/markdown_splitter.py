@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Generator
+from typing import List, Generator, Self
 
 FORMATTING_SEQUENCES = {"*", "**", "***", "_", "__", "~~", "||"}
 CODE_BLOCK_SEQUENCES = {"`", "``", "```"}
@@ -57,7 +57,7 @@ class SplitCandidateInfo:
       self.active_sequences_length += len(seq)
       return False
 
-  def copy_from(self, other):
+  def copy_from(self, other: Self):
     self.last_seen = other.last_seen
     self.active_sequences = other.active_sequences.copy()
     self.active_sequences_length = other.active_sequences_length
@@ -83,7 +83,9 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
   }
   is_in_code_block = False
 
-  chunk_start_from, chunk_char_count, chunk_prefix = 0, 0, ""
+  chunk_start_from: int = 0
+  chunk_char_count: int = 0
+  chunk_prefix: str = ""
 
   def split_chunk():
     for split_variant in SPLIT_CANDIDATES_PREFRENCE:

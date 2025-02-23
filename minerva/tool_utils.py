@@ -3,6 +3,9 @@ from typing import NamedTuple
 import pyparsing as pp
 
 
+TOOL_PREFIX = "TOOL-"
+
+
 def format_tool(name: str, tool: callable) -> str:
   return f"""Name: {name}
 Signature: {signature(tool)}
@@ -62,4 +65,4 @@ def parse_tool_call(message: str, tools: dict[str, callable]) -> ToolCall:
 
 
 def format_tool_username(tool_name: str) -> str:
-  return f"TOOL-{tool_name}"
+  return f"{TOOL_PREFIX}{tool_name}"

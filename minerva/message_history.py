@@ -1,21 +1,51 @@
-from typing import List
+from typing import List, NamedTuple, Optional, Union
 
 import tiktoken
 
 from minerva.config import OPENAI_MODEL
 
 TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
-HISTORY_MAX_TOKENS = 8192
+HISTORY_MAX_TOKENS = 16384
+
+
+class Image(NamedTuple):
+  url: str
+  height_px: int
+  width_px: int
+
+
+class ImageContent(NamedTuple):
+  images: list[Image]
+  text: Optional[str] = None
+
+
+ContentType = Union[str, ImageContent]
+
+
+# it's a pessimistic image token size computation assuming the "auto" gpt-4o
+# image detail mode
+def get_image_token_count(image: Image) -> int:
+  if image.width_px <= 512 and image.height_px <= 512:
+    return 85
+  max_tiles = (image.width_px // 512) * (image.height_px // 512)
+  return 85 + 170 * max_tiles
+
+
+def get_message_token_count(author: str, content: ContentType) -> int:
+  if isinstance(content, str):
+    return len(TOKENIZER.encode(f"{author}: {content}"))
+  elif isinstance(content, ImageContent):
+    text_tokens = len(TOKENIZER.encode(f"{author}: {content.text or ""}"))
+    image_tokens = sum(get_image_token_count(image) for image in content.images)
+    return text_tokens + image_tokens
+  raise ValueError(f"Unsupported content type: {type(content)}")
 
 
 class Message:
-  def __init__(self, author: str, content: str):
+  def __init__(self, author: str, content: ContentType):
     self.author = author
     self.content = content
-    self.len_tokens = len(TOKENIZER.encode(str(self)))
-
-  def __str__(self):
-    return f"{self.author}: {self.content}"
+    self.len_tokens = get_message_token_count(author, content)
 
 
 class MessageHistory:
@@ -30,9 +60,6 @@ class MessageHistory:
     while self.current_tokens > self.token_limit:
       deleted_message = self.history.pop(0)
       self.current_tokens -= deleted_message.len_tokens
-
-  def __str__(self):
-    return "\n".join(str(message) for message in self.history)
 
 
 def trim_by_token_size(message: str, token_limit: int, trimmed_suffix: str = "") -> str:

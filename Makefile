@@ -1,8 +1,8 @@
 lint:
-	poetry run flake8 .
+	poetry run ruff check
 
 lint-fix:
-	poetry run autopep8 .
+	poetry run ruff format
 
 test:
 	poetry run pytest tests

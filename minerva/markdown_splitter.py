@@ -15,9 +15,9 @@ class SplitCandidates(Enum):
 
 # Order of preference for splitting
 SPLIT_CANDIDATES_PREFRENCE = [
-    SplitCandidates.NEWLINE,
-    SplitCandidates.SPACE,
-    SplitCandidates.LAST_CHAR,
+  SplitCandidates.NEWLINE,
+  SplitCandidates.SPACE,
+  SplitCandidates.LAST_CHAR,
 ]
 
 
@@ -77,9 +77,9 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
     return
 
   split_candidates = {
-      SplitCandidates.SPACE: SplitCandidateInfo(),
-      SplitCandidates.NEWLINE: SplitCandidateInfo(),
-      SplitCandidates.LAST_CHAR: SplitCandidateInfo(),
+    SplitCandidates.SPACE: SplitCandidateInfo(),
+    SplitCandidates.NEWLINE: SplitCandidateInfo(),
+    SplitCandidates.LAST_CHAR: SplitCandidateInfo(),
   }
   is_in_code_block = False
 
@@ -90,10 +90,14 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
       split_candidate = split_candidates[split_variant]
       if split_candidate.last_seen is None:
         continue
-      chunk_end = split_candidate.last_seen + \
-        (1 if split_variant == SplitCandidates.LAST_CHAR else 0)
-      chunk = chunk_prefix + markdown[chunk_start_from:chunk_end] + \
-        "".join(reversed(split_candidate.active_sequences))
+      chunk_end = split_candidate.last_seen + (
+        1 if split_variant == SplitCandidates.LAST_CHAR else 0
+      )
+      chunk = (
+        chunk_prefix
+        + markdown[chunk_start_from:chunk_end]
+        + "".join(reversed(split_candidate.active_sequences))
+      )
 
       next_chunk_prefix = "".join(split_candidate.active_sequences)
       next_chunk_char_count = len(next_chunk_prefix)
@@ -101,22 +105,30 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
 
       split_candidates[SplitCandidates.NEWLINE] = SplitCandidateInfo()
       split_candidates[SplitCandidates.SPACE] = SplitCandidateInfo()
-      return chunk, next_chunk_start_from, next_chunk_char_count, next_chunk_prefix
+      return (
+        chunk,
+        next_chunk_start_from,
+        next_chunk_char_count,
+        next_chunk_prefix,
+      )
     raise Exception("no split candidate found")
 
   i = 0
   while i < len(markdown):
     for j in range(MAX_FORMATTING_SEQUENCE_LENGTH, 0, -1):
-      seq = markdown[i:i + j]
+      seq = markdown[i : i + j]
       if seq in ALL_SEQUENCES:
-        last_char_split_candidate_len = chunk_char_count + \
-            split_candidates[SplitCandidates.LAST_CHAR].active_sequences_length + \
-            len(seq)
+        last_char_split_candidate_len = (
+          chunk_char_count
+          + split_candidates[SplitCandidates.LAST_CHAR].active_sequences_length
+          + len(seq)
+        )
         if last_char_split_candidate_len >= max_chunk_size:
           next_chunk, chunk_start_from, chunk_char_count, chunk_prefix = split_chunk()
           yield next_chunk
         is_in_code_block = split_candidates[SplitCandidates.LAST_CHAR].process_sequence(
-            seq, is_in_code_block)
+          seq, is_in_code_block
+        )
         i += len(seq)
         chunk_char_count += len(seq)
         split_candidates[SplitCandidates.LAST_CHAR].last_seen = i - 1
@@ -126,12 +138,14 @@ def split_markdown(markdown: str, max_chunk_size: int) -> Generator[str, None, N
     chunk_char_count += 1
     if markdown[i] == "\n":
       split_candidates[SplitCandidates.NEWLINE].copy_from(
-          split_candidates[SplitCandidates.LAST_CHAR])
+        split_candidates[SplitCandidates.LAST_CHAR]
+      )
     elif markdown[i] == " ":
       split_candidates[SplitCandidates.SPACE].copy_from(split_candidates[SplitCandidates.LAST_CHAR])
 
-    last_char_split_candidate_len = chunk_char_count + \
-      split_candidates[SplitCandidates.LAST_CHAR].active_sequences_length
+    last_char_split_candidate_len = (
+      chunk_char_count + split_candidates[SplitCandidates.LAST_CHAR].active_sequences_length
+    )
     if last_char_split_candidate_len == max_chunk_size:
       next_chunk, chunk_start_from, chunk_char_count, chunk_prefix = split_chunk()
       yield next_chunk

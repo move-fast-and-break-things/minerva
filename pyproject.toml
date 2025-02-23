@@ -19,10 +19,9 @@ icalendar = "^5.0.13"
 recurring-ical-events = "^3.2.0"
 
 [tool.poetry.group.dev.dependencies]
-autopep8 = "^2.3.1"
 pytest = "^8.3.2"
-flake8 = "^7.1.1"
 pytest-asyncio = "^0.24.0"
+ruff = "^0.9.7"
 freezegun = "^1.5.1"
 
 [tool.poetry.scripts]
@@ -32,7 +31,6 @@ minerva = "minerva.app:main"
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.autopep8]
-ignore = ["E125", "E127"]
-in-place = true
-recursive = true
+[tool.ruff]
+line-length = 100
+indent-width = 2

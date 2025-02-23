@@ -5,14 +5,30 @@ from openai import AsyncOpenAI
 
 from telegram import Update, Message as TelegramMessage, User as TelegramUser
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
-from telegram.ext import Application, ContextTypes, MessageHandler, filters, ChatMemberHandler
+from telegram.ext import (
+  Application,
+  ContextTypes,
+  MessageHandler,
+  filters,
+  ChatMemberHandler,
+)
 
 from minerva.format_chat_history_for_openai import format_chat_history_for_openai
 from minerva.get_image_from_telegram_photo import get_image_from_telegram_photo
 from minerva.config import AI_NAME, CALENDAR_ICS_URL
 from minerva.markdown_splitter import split_markdown
-from minerva.message_history import ImageContent, Message, MessageHistory, trim_by_token_size
-from minerva.prompt import USERNAMELESS_ID_PREFIX, ModelAction, Prompt, parse_model_message
+from minerva.message_history import (
+  ImageContent,
+  Message,
+  MessageHistory,
+  trim_by_token_size,
+)
+from minerva.prompt import (
+  USERNAMELESS_ID_PREFIX,
+  ModelAction,
+  Prompt,
+  parse_model_message,
+)
 from minerva.tools.fetch_html import fetch_html
 from minerva.tool_utils import format_tool_username, parse_tool_call
 
@@ -31,11 +47,11 @@ class ReplyToMessageCallInfo:
 
 class Minerva:
   def __init__(
-      self,
-      application: Application,
-      chat_id: int,
-      openai_api_key: str,
-      openai_model: str,
+    self,
+    application: Application,
+    chat_id: int,
+    openai_api_key: str,
+    openai_model: str,
   ):
     self.application = application
     self.chat_id = chat_id
@@ -43,11 +59,12 @@ class Minerva:
     self.openai = AsyncOpenAI(api_key=openai_api_key)
     self.openai_model = openai_model
     self.tools: dict[str, callable] = {
-        "fetch_html": fetch_html,
+      "fetch_html": fetch_html,
     }
 
     if CALENDAR_ICS_URL:
       from minerva.tools.calendar import get_query_calendar
+
       query_calendar = get_query_calendar(CALENDAR_ICS_URL)
       self.tools["query_calendar"] = query_calendar
 
@@ -59,11 +76,16 @@ class Minerva:
     print("Starting Minerva with prompt:\n", self.prompt)
 
     self.application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO, self.on_message))
-    self.application.add_handler(ChatMemberHandler(
-        self.on_chat_member_update, chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER))
+    self.application.add_handler(
+      ChatMemberHandler(
+        self.on_chat_member_update,
+        chat_member_types=ChatMemberHandler.MY_CHAT_MEMBER,
+      )
+    )
 
     print(
-        f"Minerva is ready to chat in chat {self.chat_id}. Minerva username is {self.me.username}.")
+      f"Minerva is ready to chat in chat {self.chat_id}. Minerva username is {self.me.username}."
+    )
 
   async def on_chat_member_update(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.my_chat_member:
@@ -110,11 +132,11 @@ class Minerva:
       history_message = Message(author=message_author, content=message.text)
     elif message.photo:
       history_message = Message(
-          author=message_author,
-          content=ImageContent(
-              images=[await get_image_from_telegram_photo(self.application.bot, message.photo)],
-              text=message.caption,
-          )
+        author=message_author,
+        content=ImageContent(
+          images=[await get_image_from_telegram_photo(self.application.bot, message.photo)],
+          text=message.caption,
+        ),
       )
       # If the user uploads multiple photos in a single message, Telegram API
       # will emit different message events for them
@@ -133,10 +155,10 @@ class Minerva:
     await self._reply_to_message(message, chat_history)
 
   async def _reply_to_message(
-      self,
-      message: TelegramMessage,
-      chat_history: MessageHistory,
-      call_info: ReplyToMessageCallInfo = None,
+    self,
+    message: TelegramMessage,
+    chat_history: MessageHistory,
+    call_info: ReplyToMessageCallInfo = None,
   ) -> None:
     if call_info is None:
       call_info = ReplyToMessageCallInfo()
@@ -148,22 +170,22 @@ class Minerva:
       print(f"Chat history:\n{json.dumps(messages, indent=2)}\n\n")
 
       response = await self.openai.chat.completions.create(
-          model=self.openai_model,
-          messages=messages,
-          temperature=0.8,
-          frequency_penalty=0.7,
-          presence_penalty=0.3,
-          max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
-          user=f"telegram-{message.from_user.id}",
+        model=self.openai_model,
+        messages=messages,
+        temperature=0.8,
+        frequency_penalty=0.7,
+        presence_penalty=0.3,
+        max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
+        user=f"telegram-{message.from_user.id}",
       )
       answer = response.choices[0].message.content  # type: ignore
       print(f"OpenAI response:\n{answer}\n\n")
     except Exception as err:
       print("OpenAI API error:", err)
       answer = (
-          f"Action: {ModelAction.RESPOND}\n"
-          "I'm sorry, I'm having trouble understanding you right now."
-          " Could you please rephrase your question?"
+        f"Action: {ModelAction.RESPOND}\n"
+        "I'm sorry, I'm having trouble understanding you right now."
+        " Could you please rephrase your question?"
       )
 
     chat_history.add(Message(self.me.username, answer))
@@ -172,10 +194,7 @@ class Minerva:
       model_message = parse_model_message(answer)
     except Exception as err:
       if call_info.retry_count >= MAX_RETRY_COUNT:
-        answer = (
-            "I'm sorry, I'm having trouble understanding you right now."
-            " Could you please rephrase your question?"
-        )
+        answer = "I'm sorry, I'm having trouble understanding you right now. Could you please rephrase your question?"
         chat_history.add(Message(self.me.username, f"Action: {ModelAction.RESPOND}\n{answer}"))
         await message.reply_markdown(answer)
         return
@@ -195,11 +214,12 @@ class Minerva:
 
         # Minerva reached the tool use limit, tell her to reply to the user
         if call_info.tool_use_count == MAX_TOOL_USE_COUNT:
-          chat_history.add(Message(
+          chat_history.add(
+            Message(
               format_tool_username("ERROR"),
-              f"You've used tools more than {MAX_TOOL_USE_COUNT} times in a row."
-              " Reply to the user.",
-          ))
+              f"You've used tools more than {MAX_TOOL_USE_COUNT} times in a row. Reply to the user.",
+            )
+          )
           await self._reply_to_message(message, chat_history, call_info)
           return
 
@@ -207,7 +227,12 @@ class Minerva:
         # Reply to the user instead of her
         if call_info.tool_use_count > MAX_TOOL_USE_COUNT:
           message = "I'm sorry, I can't help you with that. Please ask something else."
-          chat_history.add(Message(self.me.username, f"Action: {ModelAction.RESPOND}\n{message}"))
+          chat_history.add(
+            Message(
+              self.me.username,
+              f"Action: {ModelAction.RESPOND}\n{message}",
+            )
+          )
           await message.reply_markdown(message)
           return
 
@@ -222,13 +247,23 @@ class Minerva:
           tool_response = await self.tools[tool_call.tool_name](*tool_call.args)
           # ensure we won't blow up the conversation history with a huge tool response
           truncated_tool_response = trim_by_token_size(
-              tool_response, TOOL_RESPONSE_MAX_TOKENS, "...TRUNCATED",
+            tool_response,
+            TOOL_RESPONSE_MAX_TOKENS,
+            "...TRUNCATED",
           )
-          chat_history.add(Message(format_tool_username(
-              tool_call.tool_name), truncated_tool_response))
+          chat_history.add(
+            Message(
+              format_tool_username(tool_call.tool_name),
+              truncated_tool_response,
+            )
+          )
         except Exception as err:
-          chat_history.add(Message(format_tool_username(
-              tool_call.tool_name), f"ERROR: {repr(err)}"))
+          chat_history.add(
+            Message(
+              format_tool_username(tool_call.tool_name),
+              f"ERROR: {repr(err)}",
+            )
+          )
 
         await self._reply_to_message(message, chat_history, call_info)
 
@@ -246,15 +281,15 @@ class Minerva:
   def _is_mentioned(self, message: TelegramMessage) -> bool:
     for entity in message.entities:
       if (
-          entity.type == MessageEntityType.MENTION
-          and message.parse_entity(entity) == self.username_with_mention
+        entity.type == MessageEntityType.MENTION
+        and message.parse_entity(entity) == self.username_with_mention
       ):
         return True
 
     for entity in message.caption_entities:
       if (
-          entity.type == MessageEntityType.MENTION
-          and message.parse_caption_entity(entity) == self.username_with_mention
+        entity.type == MessageEntityType.MENTION
+        and message.parse_caption_entity(entity) == self.username_with_mention
       ):
         return True
 

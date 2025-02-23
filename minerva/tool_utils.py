@@ -36,9 +36,10 @@ def parse_tool_call(message: str, tools: dict[str, callable]) -> ToolCall:
   """
 
   tool_call = (
-      pp.Word(pp.alphanums + "_").setResultsName("tool_name") + pp.Suppress("(")
-      + pp.Optional(pp.delimitedList(pp.Word(pp.alphanums + "_\"':/.-"), delim=","))
-      + pp.Suppress(")")
+    pp.Word(pp.alphanums + "_").setResultsName("tool_name")
+    + pp.Suppress("(")
+    + pp.Optional(pp.delimitedList(pp.Word(pp.alphanums + "_\"':/.-"), delim=","))
+    + pp.Suppress(")")
   )
   parsed = tool_call.parseString(message)
   tool_name = parsed["tool_name"]

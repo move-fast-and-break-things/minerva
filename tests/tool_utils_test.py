@@ -37,8 +37,8 @@ Description: None
 
 def test_parse_tool_call():
   tools = {
-      "sum": sum,
-      "do_x": do_x,
+    "sum": sum,
+    "do_x": do_x,
   }
 
   toolCall = parse_tool_call("sum(1, 2)", tools)
@@ -50,7 +50,7 @@ def test_parse_tool_call():
 
 def test_parse_tool_call_erros_if_tool_doesnt_exist():
   tools = {
-      "sum": sum,
+    "sum": sum,
   }
 
   try:
@@ -62,7 +62,7 @@ def test_parse_tool_call_erros_if_tool_doesnt_exist():
 
 def test_parse_tool_call_errors_if_number_of_args_doesnt_match_signature():
   tools = {
-      "sum": sum,
+    "sum": sum,
   }
 
   try:
@@ -74,7 +74,7 @@ def test_parse_tool_call_errors_if_number_of_args_doesnt_match_signature():
 
 def test_parse_tool_call_supports_string_arguments_with_single_quote():
   tools = {
-      "fetch": fetch,
+    "fetch": fetch,
   }
 
   toolCall = parse_tool_call("fetch('https://example.com')", tools)
@@ -83,7 +83,7 @@ def test_parse_tool_call_supports_string_arguments_with_single_quote():
 
 def test_parse_tool_call_supports_string_arguments_with_double_quote():
   tools = {
-      "fetch": fetch,
+    "fetch": fetch,
   }
 
   toolCall = parse_tool_call('fetch("https://example.com")', tools)
@@ -92,9 +92,10 @@ def test_parse_tool_call_supports_string_arguments_with_double_quote():
 
 def test_parse_tool_call_supports_arguments_with_dashes():
   tools = {
-      "fetch": fetch,
+    "fetch": fetch,
   }
 
   toolCall = parse_tool_call('fetch("https://github.com/move-fast-and-break-things")', tools)
-  assert toolCall == ToolCall(tool_name="fetch", args=[
-                              "https://github.com/move-fast-and-break-things"])
+  assert toolCall == ToolCall(
+    tool_name="fetch", args=["https://github.com/move-fast-and-break-things"]
+  )

@@ -35,7 +35,7 @@ def get_message_token_count(author: str, content: ContentType) -> int:
   if isinstance(content, str):
     return len(TOKENIZER.encode(f"{author}: {content}"))
   elif isinstance(content, ImageContent):
-    text_tokens = len(TOKENIZER.encode(f"{author}: {content.text or ""}"))
+    text_tokens = len(TOKENIZER.encode(f"{author}: {content.text or ''}"))
     image_tokens = sum(get_image_token_count(image) for image in content.images)
     return text_tokens + image_tokens
   raise ValueError(f"Unsupported content type: {type(content)}")

@@ -18,4 +18,4 @@ jobs:
           cache: poetry
       - run: poetry install
       - run: make lint
-      - run make type-check
+      - run: make type-check

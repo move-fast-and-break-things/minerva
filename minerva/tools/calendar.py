@@ -40,9 +40,9 @@ def parse_ics(ics_content: str) -> icalendar.Calendar:
 
 
 def query_downloaded_calendar(
-  cal: icalendar.Calendar,
-  date_from: datetime,
-  date_to: datetime,
+    cal: icalendar.Calendar,
+    date_from: datetime,
+    date_to: datetime,
 ) -> list[Event]:
   filtered_cal = recurring_ical_events.of(cal).between(date_from, date_to)
   events = []

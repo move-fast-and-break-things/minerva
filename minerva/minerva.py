@@ -97,7 +97,7 @@ class Minerva:
       return
 
     topic_id = self._get_topic_id(message)
-    should_respond = self._is_reply_to_me(message) and not self._is_mentioned(message)
+    should_respond = self._is_reply_to_me(message) or self._is_mentioned(message)
     if should_respond:
       # send typing notification before starting to download the images because
       # downloading may take some time and we want to let the user that we
@@ -128,7 +128,7 @@ class Minerva:
     chat_history = self.chat_histories[topic_id]
     chat_history.add(history_message)
 
-    if not self._is_reply_to_me(message) and not self._is_mentioned(message):
+    if not should_respond:
       return
     await self._reply_to_message(message, chat_history)
 
@@ -250,4 +250,12 @@ class Minerva:
           and message.parse_entity(entity) == self.username_with_mention
       ):
         return True
+
+    for entity in message.caption_entities:
+      if (
+          entity.type == MessageEntityType.MENTION
+          and message.parse_caption_entity(entity) == self.username_with_mention
+      ):
+        return True
+
     return False

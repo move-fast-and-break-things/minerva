@@ -286,9 +286,7 @@ class Minerva:
         print("Unknown action:", model_message.action)
 
   def _get_topic_id(self, message: TelegramMessage) -> int:
-    if not message.message_thread_id:
-      raise ValueError("Unexpected: message has no thread id")
-    return message.message_thread_id
+    return message.message_thread_id or 0
 
   def _is_reply_to_me(self, message: TelegramMessage) -> bool:
     if not message.reply_to_message:

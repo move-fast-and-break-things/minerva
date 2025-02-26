@@ -286,6 +286,7 @@ class Minerva:
         print("Unknown action:", model_message.action)
 
   def _get_topic_id(self, message: TelegramMessage) -> int:
+    # The Genral topic doesn't have a thread_id; we default to 0 for it
     return message.message_thread_id or 0
 
   def _is_reply_to_me(self, message: TelegramMessage) -> bool:

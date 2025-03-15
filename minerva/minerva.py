@@ -51,12 +51,13 @@ class Minerva:
     application: Application,
     chat_id: int,
     openai_api_key: str,
+    openai_base_url: str,
     openai_model: str,
   ):
     self.application = application
     self.chat_id = chat_id
     self.chat_histories: dict[int, MessageHistory] = {}
-    self.openai = AsyncOpenAI(api_key=openai_api_key)
+    self.openai = AsyncOpenAI(api_key=openai_api_key, base_url=openai_base_url)
     self.openai_model = openai_model
     self.tools: dict[str, GenericToolFn] = {
       "fetch_html": fetch_html,

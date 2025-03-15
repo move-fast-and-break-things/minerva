@@ -1,6 +1,7 @@
 from minerva.config import (
   AI_NAME,
   OPENAI_API_KEY,
+  OPENAI_API_BASE,
   OPENAI_MODEL,
   TELEGRAM_BOT_TOKEN,
   TELEGRAM_CHAT_ID,
@@ -30,6 +31,7 @@ def main():
       application,
       chat_id=TELEGRAM_CHAT_ID,
       openai_api_key=OPENAI_API_KEY,
+      openai_base_url=OPENAI_API_BASE,
       openai_model=OPENAI_MODEL,
     )
     await minerva.initialize()

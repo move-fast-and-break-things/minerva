@@ -5,7 +5,7 @@ lint-fix:
 	poetry run ruff format
 
 test:
-	poetry run pytest tests
+	poetry run pytest .
 
 type-check:
 	poetry run pyright .

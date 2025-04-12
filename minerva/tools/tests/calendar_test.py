@@ -16,7 +16,7 @@ from minerva.tools.calendar import (
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
 
-DEFAULT_ICS_PATH = path.join(path.dirname(__file__), "..", "fixtures", "test-calendar.ics")
+DEFAULT_ICS_PATH = path.join(path.dirname(__file__), "fixtures", "test-calendar.ics")
 
 
 def getMockCalendarRequestHandler(ics_paths: Optional[list[str]] = None):
@@ -169,7 +169,7 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
 @with_http_file_server(
   [
     DEFAULT_ICS_PATH,
-    path.join(path.dirname(__file__), "..", "fixtures", "test-calendar-updated.ics"),
+    path.join(path.dirname(__file__), "fixtures", "test-calendar-updated.ics"),
   ]
 )
 async def test_calendar_tool_refetches_calendar(

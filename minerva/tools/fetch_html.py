@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 import httpx
 import lxml
 import lxml.html
@@ -6,7 +6,7 @@ import lxml.html.clean  # type: ignore
 
 TIMEOUT_SEC = 2
 
-LXML_CLEANER: Any = lxml.html.clean.Cleaner(
+LXML_CLEANER = cast(Any, lxml.html.clean.Cleaner(
   scripts=True,
   javascript=True,
   comments=True,
@@ -22,7 +22,7 @@ LXML_CLEANER: Any = lxml.html.clean.Cleaner(
   # remove all attrs
   safe_attrs_only=True,
   safe_attrs=[],
-)
+))
 
 
 async def fetch_html(url: str) -> str:

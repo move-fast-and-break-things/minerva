@@ -1,5 +1,6 @@
 from asyncio import sleep
 from typing import Any, Callable, Optional
+import icalendar
 import pytest
 from datetime import datetime, timezone
 from os import path
@@ -7,14 +8,12 @@ from os import path
 from freezegun import freeze_time
 from freezegun.api import FrozenDateTimeFactory
 
-from minerva.tools.calendar import (
-  query_downloaded_calendar,
-  parse_ics,
-  get_query_calendar,
-)
+from minerva.tools.calendar.get_query_calendar import get_query_calendar
 
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
+
+from minerva.tools.calendar.query_icalendar import query_icalendar
 
 DEFAULT_ICS_PATH = path.join(path.dirname(__file__), "fixtures", "test-calendar.ics")
 
@@ -69,9 +68,9 @@ def test_query_ics():
   ics_path = DEFAULT_ICS_PATH
   with open(ics_path) as f:
     ics = f.read()
-    cal = parse_ics(ics)
+    cal = icalendar.Calendar.from_ical(ics)
 
-  events = query_downloaded_calendar(
+  events = query_icalendar(
     cal,
     datetime(2024, 9, 1, tzinfo=timezone.utc),
     datetime(2024, 9, 6, tzinfo=timezone.utc),

@@ -3,7 +3,13 @@ from typing import Optional, cast
 
 from openai import AsyncOpenAI
 
-from telegram import Update, Message as TelegramMessage, User as TelegramUser, Bot
+from telegram import (
+  Update,
+  Message as TelegramMessage,
+  User as TelegramUser,
+  Bot,
+  Chat as TelegramChat,
+)
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
 from telegram.ext import (
   Application,
@@ -64,10 +70,20 @@ class Minerva:
     }
 
     if CALENDAR_ICS_URL:
-      from minerva.tools.calendar import get_query_calendar
+      from minerva.tools.calendar.get_query_calendar import get_query_calendar
 
       query_calendar = get_query_calendar(CALENDAR_ICS_URL)
       self.tools["query_calendar"] = query_calendar
+
+      from minerva.tools.calendar.meeting_reminderer import setup_meeting_reminderer
+
+      async def send_reminder(message: str) -> None:
+        await cast(Bot, self.application.bot).send_message(chat_id=self.chat_id, text=message)
+
+      setup_meeting_reminderer(
+        send_reminder,
+        CALENDAR_ICS_URL,
+      )
 
   async def initialize(self) -> None:
     self.me = cast(TelegramUser, await self.application.bot.get_me())

@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta, timezone
-from typing import NamedTuple, Optional, cast
+from typing import NamedTuple, Optional
 import icalendar
 import recurring_ical_events  # type: ignore
-import httpx
 
 
 class Event(NamedTuple):
@@ -16,7 +15,12 @@ class Event(NamedTuple):
   def __str__(self):
     return f"""Event: {self.summary} ({self.start.astimezone(tz=timezone.utc)} - {self.end.astimezone(tz=timezone.utc)})
 Description: {self.description}
-Video call: {self.meet_url}"""  # noqa: E501
+Video call: {self.meet_url}"""
+
+  @property
+  def unique_id(self) -> str:
+    """Create a unique identifier for the event based on its details."""
+    return f"{self.summary}_{self.start.isoformat()}"
 
 
 def _trim_google_meet_links_from_description(description: str) -> str:
@@ -36,17 +40,13 @@ def _trim_google_meet_links_from_description(description: str) -> str:
   return description
 
 
-def parse_ics(ics_content: str) -> icalendar.Calendar:
-  # `from_ical` returns the type `icalendar.Component`, which we cannot import
-  # from `icalendar`; it works great with the `icalendar.Calendar` type
-  return cast(icalendar.Calendar, icalendar.Calendar.from_ical(ics_content))
-
-
-def query_downloaded_calendar(
-  cal: icalendar.Calendar,
+def query_icalendar(
+  cal: icalendar.cal.Component,
   date_from: datetime,
   date_to: datetime | timedelta,
 ) -> list[Event]:
+  """Query the calendar for events in the specified time range."""
+
   filtered_cal = recurring_ical_events.of(cal).between(date_from, date_to)
   events: list[Event] = []
   for component in filtered_cal:
@@ -59,30 +59,3 @@ def query_downloaded_calendar(
       rrule = component.get("rrule")
       events.append(Event(summary, description, x_google_conference, start, end, rrule))
   return events
-
-
-def get_query_calendar(calendar_url: str):
-  async def query_calendar(next_days: int) -> str:
-    """Query the event calendar for the next `next_days` days.
-
-    Args:
-      next_days: The number of days to query the calendar for. Should be at least 1. The max 366.
-
-    The function lists all dates and times in the UTC timezone"""
-    if next_days < 1:
-      raise ValueError("next_days must be at least 1")
-    if next_days > 366:
-      raise ValueError("next_days must be at most 366")
-
-    async with httpx.AsyncClient() as client:
-      calendar_request = await client.get(calendar_url)
-    calendar_request.raise_for_status()
-    ics_content = calendar_request.text
-    cal = parse_ics(ics_content)
-
-    events = query_downloaded_calendar(cal, datetime.now(), timedelta(days=next_days))
-    if not events:
-      return "No events found"
-    return "\n\n".join([str(event) for event in events])
-
-  return query_calendar

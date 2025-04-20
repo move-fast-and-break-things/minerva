@@ -29,7 +29,7 @@ jobs:
           docker context create --docker "host=ssh://root@${DEPLOY_HOST}" --description "deploy server" "mfabt.club"
           echo "" > .env
           echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
-          echo "OPENAI_MODEL=gpt-4o-2024-11-20" >> .env
+          echo "OPENAI_MODEL=gpt-4.1-2025-04-14" >> .env
           echo "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}" >> .env
           echo "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}" >> .env
           echo "CALENDAR_ICS_URL=${CALENDAR_ICS_URL}" >> .env

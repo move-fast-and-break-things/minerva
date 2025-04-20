@@ -4,7 +4,11 @@ import tiktoken
 
 from minerva.config import OPENAI_MODEL
 
-TOKENIZER = tiktoken.encoding_for_model(OPENAI_MODEL)
+TOKENIZER = (
+  tiktoken.get_encoding("o200k_base")
+  if OPENAI_MODEL.startswith("gpt-4.1-")
+  else tiktoken.encoding_for_model(OPENAI_MODEL)
+)
 HISTORY_MAX_TOKENS = 16384
 
 

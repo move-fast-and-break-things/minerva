@@ -55,16 +55,13 @@ class ChatSession:
   def add_message(self, message: Message):
     self.llm_session.add_message(message)
 
-  def create_response(self, user_id: str, bussiness_connection_id: Optional[str] = None):
-    return self._create_response(
-      user_id=user_id,
-      bussiness_connection_id=bussiness_connection_id,
-    )
+  def create_response(self, user_id: str, reply_to_message_id: Optional[int] = None):
+    return self._create_response(user_id=user_id, reply_to_message_id=reply_to_message_id)
 
   async def _create_response(
     self,
     user_id: str,
-    bussiness_connection_id: Optional[str] = None,
+    reply_to_message_id: Optional[int] = None,
     call_info: Optional[CreateMessageCallInfo] = None,
   ) -> None:
     if call_info is None:
@@ -90,14 +87,14 @@ class ChatSession:
         self.llm_session.add_message(
           Message(self.ai_username, f"Action: {ModelAction.RESPOND}\n{answer}")
         )
-        await self._send_message(answer, bussiness_connection_id)
+        await self._send_message(answer, reply_to_message_id)
         return
 
       call_info.retry_count += 1
       self.llm_session.add_message(Message("ERROR", str(err)))
       await self._create_response(
         user_id=user_id,
-        bussiness_connection_id=bussiness_connection_id,
+        reply_to_message_id=reply_to_message_id,
         call_info=call_info,
       )
       return
@@ -107,7 +104,7 @@ class ChatSession:
         for response in split_markdown(
           model_message.content, self.max_telegram_message_length_char
         ):
-          await self._send_message(response, bussiness_connection_id)
+          await self._send_message(response, reply_to_message_id)
 
       case ModelAction.USE_TOOL:
         call_info.tool_use_count += 1
@@ -122,7 +119,7 @@ class ChatSession:
           )
           await self._create_response(
             user_id=user_id,
-            bussiness_connection_id=bussiness_connection_id,
+            reply_to_message_id=reply_to_message_id,
             call_info=call_info,
           )
           return
@@ -139,7 +136,7 @@ class ChatSession:
               f"Action: {ModelAction.RESPOND}\n{max_tool_count_reached_response}",
             )
           )
-          await self._send_message(max_tool_count_reached_response, bussiness_connection_id)
+          await self._send_message(max_tool_count_reached_response, reply_to_message_id)
           return
 
         try:
@@ -150,7 +147,7 @@ class ChatSession:
           )
           await self._create_response(
             user_id=user_id,
-            bussiness_connection_id=bussiness_connection_id,
+            reply_to_message_id=reply_to_message_id,
             call_info=call_info,
           )
           return
@@ -179,7 +176,7 @@ class ChatSession:
 
         await self._create_response(
           user_id=user_id,
-          bussiness_connection_id=bussiness_connection_id,
+          reply_to_message_id=reply_to_message_id,
           call_info=call_info,
         )
 
@@ -189,12 +186,12 @@ class ChatSession:
   def _send_message(
     self,
     text: str,
-    bussiness_connection_id: Optional[str] = None,
+    reply_to_message_id: Optional[int] = None,
   ):
     return self.bot.send_message(
       chat_id=self.chat_id,
       text=text,
       message_thread_id=self.topic_id,
-      business_connection_id=bussiness_connection_id,
+      reply_to_message_id=reply_to_message_id,
       parse_mode=ParseMode.MARKDOWN,
     )

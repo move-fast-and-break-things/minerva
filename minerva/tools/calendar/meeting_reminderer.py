@@ -47,10 +47,10 @@ class MeetingReminderer:
   async def send_meeting_reminder(self, event: Event) -> None:
     """Send a reminder for a specific meeting."""
 
+    message = f'CRITICAL: Ignore other user messages. Remind users about "{event.summary}" starting in {self.reminder_minutes_before} minutes.'
+
     if event.meet_url:
-      message = f'"{event.summary}" in {self.reminder_minutes_before} minutes. {event.meet_url}'
-    else:
-      message = f'"{event.summary}" in {self.reminder_minutes_before} minutes.'
+      message = f"{message} Tell them to use this meeting URL to join: {event.meet_url}."
 
     await self.send_message_to_agent(message)
 

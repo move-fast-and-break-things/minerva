@@ -114,7 +114,7 @@ class Minerva:
       return
 
     if not message.text and not message.photo:
-      # only text and photo messages are supported
+      # Only text and photo messages are supported
       return
 
     if not message.from_user:
@@ -129,7 +129,7 @@ class Minerva:
     topic_id = self._get_topic_id(message)
     should_respond = self._is_reply_to_me(message) or self._is_mentioned(message)
     if should_respond:
-      # send typing notification before starting to download the images because
+      # Send typing notification before starting to download the images because
       # downloading may take some time and we want to let the user that we
       # started processing their request
       await message.chat.send_chat_action(ChatAction.TYPING, message_thread_id=topic_id)
@@ -184,7 +184,7 @@ class Minerva:
     )
 
   def _get_topic_id(self, message: TelegramMessage) -> int:
-    # The Genral topic doesn't have a thread_id; we default to 0 for it
+    # The General topic doesn't have a thread_id; we default to 0 for it
     return message.message_thread_id or 0
 
   def _is_reply_to_me(self, message: TelegramMessage) -> bool:

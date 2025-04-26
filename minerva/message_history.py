@@ -25,7 +25,7 @@ class ImageContent(NamedTuple):
 ContentType = Union[str, ImageContent]
 
 
-# it's a pessimistic image token size computation assuming the "auto" gpt-4o
+# It's a pessimistic image token size computation assuming the "auto" gpt-4o
 # image detail mode
 def get_image_token_count(image: Image) -> int:
   if image.width_px <= 512 and image.height_px <= 512:

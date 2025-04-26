@@ -57,10 +57,12 @@ class LlmSession:
     answer = response.choices[0].message.content
     if not answer:
       raise Exception("Unexpected: OpenAI response is empty")
-    
-    self.add_message(Message(
-      author=self.ai_username,
-      content=answer,
-    ))
+
+    self.add_message(
+      Message(
+        author=self.ai_username,
+        content=answer,
+      )
+    )
 
     return answer

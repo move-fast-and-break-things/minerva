@@ -1,7 +1,6 @@
 from typing import Optional, cast
 
 from openai import AsyncOpenAI
-from openai.types import ChatModel
 
 from telegram import (
   Update,
@@ -57,13 +56,13 @@ class Minerva:
     chat_id: int,
     openai_api_key: str,
     openai_base_url: str,
-    openai_model: ChatModel,
+    openai_model: str,
   ):
     self.application = application
     self.chat_id = chat_id
     self.chat_sessions: dict[int, LlmSession] = {}
     self.openai = AsyncOpenAI(api_key=openai_api_key, base_url=openai_base_url)
-    self.openai_model: ChatModel = openai_model
+    self.openai_model = openai_model
     self.tools: dict[str, GenericToolFn] = {
       "fetch_html": fetch_html,
     }

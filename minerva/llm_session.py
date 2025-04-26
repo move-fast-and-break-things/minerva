@@ -1,6 +1,5 @@
 import json
 from openai import AsyncOpenAI
-from openai.types import ChatModel
 
 from minerva.format_chat_history_for_openai import format_chat_history_for_openai
 from minerva.message_history import Message, MessageHistory
@@ -11,7 +10,7 @@ class LlmSession:
     self,
     ai_username: str,
     openai_client: AsyncOpenAI,
-    openai_model_name: ChatModel,
+    openai_model_name: str,
     max_completion_tokens: int,
     max_history_tokens: int,
     prompt: str,

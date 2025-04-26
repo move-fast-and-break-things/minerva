@@ -48,10 +48,7 @@ class MeetingReminderer:
     """Send a reminder for a specific meeting."""
 
     if event.meet_url:
-      message = (
-        f'"{event.summary}" in {self.reminder_minutes_before} minutes. '
-        f"{event.meet_url}"
-      )
+      message = f'"{event.summary}" in {self.reminder_minutes_before} minutes. {event.meet_url}'
     else:
       message = f'"{event.summary}" in {self.reminder_minutes_before} minutes.'
 

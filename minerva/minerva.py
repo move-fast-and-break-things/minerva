@@ -180,7 +180,7 @@ class Minerva:
 
     await chat_session.create_response(
       user_id=f"telegram-{message.from_user.id}",
-      bussiness_connection_id=message.business_connection_id,
+      reply_to_message_id=message.id,
     )
 
   def _get_topic_id(self, message: TelegramMessage) -> int:

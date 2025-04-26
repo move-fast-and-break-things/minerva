@@ -9,7 +9,6 @@ TOKENIZER = (
   if OPENAI_MODEL.startswith("gpt-4.1-")
   else tiktoken.encoding_for_model(OPENAI_MODEL)
 )
-HISTORY_MAX_TOKENS = 16384
 
 
 class Image(NamedTuple):
@@ -52,7 +51,7 @@ class Message:
 
 
 class MessageHistory:
-  def __init__(self, prompt_str: str, token_limit: int = HISTORY_MAX_TOKENS):
+  def __init__(self, prompt_str: str, token_limit: int):
     self.token_limit = token_limit
     self.history: List[Message] = []
     self.current_tokens = len(TOKENIZER.encode(prompt_str))

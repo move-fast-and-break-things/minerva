@@ -1,4 +1,3 @@
-import json
 from typing import Optional, cast
 
 from openai import AsyncOpenAI
@@ -9,7 +8,7 @@ from telegram import (
   User as TelegramUser,
   Bot,
 )
-from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
+from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction, ParseMode
 from telegram.ext import (
   Application,
   ContextTypes,
@@ -18,14 +17,13 @@ from telegram.ext import (
   ChatMemberHandler,
 )
 
-from minerva.format_chat_history_for_openai import format_chat_history_for_openai
 from minerva.get_image_from_telegram_photo import get_image_from_telegram_photo
 from minerva.config import AI_NAME, CALENDAR_ICS_URL
+from minerva.llm_session import LlmSession
 from minerva.markdown_splitter import split_markdown
 from minerva.message_history import (
   ImageContent,
   Message,
-  MessageHistory,
   trim_by_token_size,
 )
 from minerva.prompt import (
@@ -43,6 +41,7 @@ TOOL_RESPONSE_MAX_TOKENS = 2048
 
 MAX_TOOL_USE_COUNT = 5
 MAX_RETRY_COUNT = 3
+HISTORY_MAX_TOKENS = 16384
 
 
 class ReplyToMessageCallInfo:
@@ -61,7 +60,7 @@ class Minerva:
   ):
     self.application = application
     self.chat_id = chat_id
-    self.chat_histories: dict[int, MessageHistory] = {}
+    self.chat_sessions: dict[int, LlmSession] = {}
     self.openai = AsyncOpenAI(api_key=openai_api_key, base_url=openai_base_url)
     self.openai_model = openai_model
     self.tools: dict[str, GenericToolFn] = {
@@ -171,19 +170,26 @@ class Minerva:
       raise ValueError("Unsupported message type")
 
     # Add message to chat history
-    if topic_id not in self.chat_histories:
-      self.chat_histories[topic_id] = MessageHistory(str(self.prompt))
-    chat_history = self.chat_histories[topic_id]
-    chat_history.add(history_message)
+    if topic_id not in self.chat_sessions:
+      self.chat_sessions[topic_id] = LlmSession(
+        ai_username=self.username,
+        openai_client=self.openai,
+        openai_model_name=self.openai_model,
+        max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
+        max_history_tokens=HISTORY_MAX_TOKENS,
+        prompt=str(self.prompt),
+      )
+    llm_session = self.chat_sessions[topic_id]
+    llm_session.add_message(history_message)
 
     if not should_respond:
       return
-    await self._reply_to_message(message, chat_history)
+    await self._reply_to_message(message, llm_session)
 
   async def _reply_to_message(
     self,
     message: TelegramMessage,
-    chat_history: MessageHistory,
+    llm_session: LlmSession,
     call_info: Optional[ReplyToMessageCallInfo] = None,
   ) -> None:
     if not message.from_user:
@@ -193,23 +199,7 @@ class Minerva:
       call_info = ReplyToMessageCallInfo()
 
     try:
-      prompt = str(self.prompt)
-      print(f"OpenAPI prompt:\n{prompt}\n\n")
-      messages = format_chat_history_for_openai(prompt, chat_history)
-      print(f"Chat history:\n{json.dumps(messages, indent=2)}\n\n")
-
-      response = await self.openai.chat.completions.create(
-        model=self.openai_model,
-        messages=messages,
-        temperature=0.8,
-        frequency_penalty=0.7,
-        presence_penalty=0.3,
-        max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
-        user=f"telegram-{message.from_user.id}",
-      )
-      answer = response.choices[0].message.content
-      if not answer:
-        raise Exception("Unexpected: OpenAI response is empty")
+      answer = await llm_session.create_response(user_id=f"telegram-{message.from_user.id}")
       print(f"OpenAI response:\n{answer}\n\n")
     except Exception as err:
       print("OpenAI API error:", err)
@@ -218,21 +208,28 @@ class Minerva:
         "I'm sorry, I'm having trouble understanding you right now."
         " Could you please rephrase your question?"
       )
-
-    chat_history.add(Message(self.username, answer))
+      llm_session.add_message(Message(self.username, answer))
 
     try:
       model_message = parse_model_message(answer)
     except Exception as err:
       if call_info.retry_count >= MAX_RETRY_COUNT:
         answer = "I'm sorry, I'm having trouble understanding you right now. Could you please rephrase your question?"
-        chat_history.add(Message(self.username, f"Action: {ModelAction.RESPOND}\n{answer}"))
+        llm_session.add_message(Message(self.username, f"Action: {ModelAction.RESPOND}\n{answer}"))
+        await cast(Bot, self.application.bot).send_message(
+          chat_id=message.chat.id,
+          text=answer,
+          reply_to_message_id=message.message_id,
+          message_thread_id=self._get_topic_id(message),
+          business_connection_id=message.business_connection_id,
+          parse_mode=ParseMode.MARKDOWN,
+        )
         await message.reply_markdown(answer)
         return
 
       call_info.retry_count += 1
-      chat_history.add(Message("ERROR", str(err)))
-      await self._reply_to_message(message, chat_history, call_info)
+      llm_session.add_message(Message("ERROR", str(err)))
+      await self._reply_to_message(message, llm_session, call_info)
       return
 
     match model_message.action:
@@ -245,13 +242,13 @@ class Minerva:
 
         # Minerva reached the tool use limit, tell her to reply to the user
         if call_info.tool_use_count == MAX_TOOL_USE_COUNT:
-          chat_history.add(
+          llm_session.add_message(
             Message(
               format_tool_username("ERROR"),
               f"You've used tools more than {MAX_TOOL_USE_COUNT} times in a row. Reply to the user.",
             )
           )
-          await self._reply_to_message(message, chat_history, call_info)
+          await self._reply_to_message(message, llm_session, call_info)
           return
 
         # Minerva is past the tool use limit and ignored our request to reply to the user
@@ -260,7 +257,7 @@ class Minerva:
           max_tool_count_reached_response = (
             "I'm sorry, I can't help you with that. Please ask something else."
           )
-          chat_history.add(
+          llm_session.add_message(
             Message(
               self.username,
               f"Action: {ModelAction.RESPOND}\n{max_tool_count_reached_response}",
@@ -272,8 +269,8 @@ class Minerva:
         try:
           tool_call = parse_tool_call(model_message.content, self.tools)
         except Exception as err:
-          chat_history.add(Message(format_tool_username("ERROR"), f"ERROR: {repr(err)}"))
-          await self._reply_to_message(message, chat_history, call_info)
+          llm_session.add_message(Message(format_tool_username("ERROR"), f"ERROR: {repr(err)}"))
+          await self._reply_to_message(message, llm_session, call_info)
           return
 
         try:
@@ -284,21 +281,21 @@ class Minerva:
             TOOL_RESPONSE_MAX_TOKENS,
             "...TRUNCATED",
           )
-          chat_history.add(
+          llm_session.add_message(
             Message(
               format_tool_username(tool_call.tool_name),
               truncated_tool_response,
             )
           )
         except Exception as err:
-          chat_history.add(
+          llm_session.add_message(
             Message(
               format_tool_username(tool_call.tool_name),
               f"ERROR: {repr(err)}",
             )
           )
 
-        await self._reply_to_message(message, chat_history, call_info)
+        await self._reply_to_message(message, llm_session, call_info)
 
       case _:
         print("Unknown action:", model_message.action)

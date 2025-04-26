@@ -8,7 +8,6 @@ from telegram import (
   Message as TelegramMessage,
   User as TelegramUser,
   Bot,
-  Chat as TelegramChat,
 )
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
 from telegram.ext import (
@@ -78,7 +77,7 @@ class Minerva:
       from minerva.tools.calendar.meeting_reminderer import setup_meeting_reminderer
 
       async def send_reminder(message: str) -> None:
-        await cast(Bot, self.application.bot).send_message(chat_id=self.chat_id, text=message)
+        await cast(Bot, self.application.bot).send_message(chat_id=self.chat_id, text=message, message_thread_id=0)
 
       setup_meeting_reminderer(
         send_reminder,

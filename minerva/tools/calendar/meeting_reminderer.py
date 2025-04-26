@@ -49,11 +49,11 @@ class MeetingReminderer:
 
     if event.meet_url:
       message = (
-        f'Remind everyone that we have a meeting "{event.summary}" in {self.reminder_minutes_before} minutes. '
-        f"Also share with them the Google Meet link: {event.meet_url}"
+        f'"{event.summary}" in {self.reminder_minutes_before} minutes. '
+        f"{event.meet_url}"
       )
     else:
-      message = f'Remind everyone that we have a meeting "{event.summary}" in {self.reminder_minutes_before} minutes.'
+      message = f'"{event.summary}" in {self.reminder_minutes_before} minutes.'
 
     await self.send_message_to_agent(message)
 
@@ -122,6 +122,7 @@ class MeetingReminderer:
 
   async def _meeting_reminder_loop(self) -> None:
     """Periodically refresh the calendar and schedule reminders for new meetings."""
+
     check_interval = self.check_interval_minutes * 60  # Convert minutes to seconds
 
     while True:
@@ -162,11 +163,11 @@ def setup_meeting_reminderer(
   Set up the meeting reminder functionality.
 
   Args:
-      send_message_to_agent: Function to send messages to the agent
-      calendar_url: URL of the calendar ICS file
+    send_message_to_agent: Function to send messages to the agent
+    calendar_url: URL of the calendar ICS file
 
   Returns:
-      A MeetingReminderer instance that has been started
+    A MeetingReminderer instance that has been started
   """
 
   # Create and start the reminderer

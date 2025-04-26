@@ -23,7 +23,7 @@ from minerva.config import AI_NAME, CALENDAR_ICS_URL
 from minerva.message_history import ImageContent, Message
 from minerva.prompt import USERNAMELESS_ID_PREFIX, Prompt
 from minerva.tools.fetch_html import fetch_html
-from minerva.tool_utils import GenericToolFn
+from minerva.tool_utils import GenericToolFn, format_tool_username
 
 MAX_TELEGRAM_MESSAGE_LENGTH_CHAR = 2000
 OPENAI_RESPONSE_MAX_TOKENS = 1512
@@ -32,6 +32,8 @@ TOOL_RESPONSE_MAX_TOKENS = 2048
 MAX_TOOL_USE_COUNT = 5
 MAX_RETRY_COUNT = 3
 HISTORY_MAX_TOKENS = 16384
+
+GENERAL_TOPIC_ID = 0
 
 
 class Minerva:
@@ -61,14 +63,19 @@ class Minerva:
       from minerva.tools.calendar.meeting_reminderer import setup_meeting_reminderer
 
       async def send_reminder(message: str) -> None:
-        await cast(Bot, self.application.bot).send_message(
-          chat_id=self.chat_id, text=message, message_thread_id=0
-        )
+        if GENERAL_TOPIC_ID not in self.chat_sessions:
+          self.chat_sessions[GENERAL_TOPIC_ID] = self._create_chat_session(GENERAL_TOPIC_ID)
+        chat_session = self.chat_sessions[GENERAL_TOPIC_ID]
 
-      setup_meeting_reminderer(
-        send_reminder,
-        CALENDAR_ICS_URL,
-      )
+        chat_session.add_message(
+          Message(
+            author=format_tool_username("calendar"),
+            content=message,
+          )
+        )
+        await chat_session.create_response(user_id="calendar")
+
+      setup_meeting_reminderer(send_reminder, CALENDAR_ICS_URL)
 
   async def initialize(self) -> None:
     self.me = cast(TelegramUser, await self.application.bot.get_me())
@@ -156,22 +163,7 @@ class Minerva:
 
     # Add message to chat history
     if topic_id not in self.chat_sessions:
-      self.chat_sessions[topic_id] = ChatSession(
-        bot=cast(Bot, self.application.bot),
-        ai_username=self.username,
-        openai_client=self.openai,
-        openai_model_name=self.openai_model,
-        max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
-        max_history_tokens=HISTORY_MAX_TOKENS,
-        prompt=str(self.prompt),
-        tools=self.tools,
-        chat_id=self.chat_id,
-        topic_id=topic_id,
-        max_create_response_retry_count=MAX_RETRY_COUNT,
-        max_create_response_tool_use_count=MAX_TOOL_USE_COUNT,
-        max_telegram_message_length_char=MAX_TELEGRAM_MESSAGE_LENGTH_CHAR,
-        max_tool_response_tokens=TOOL_RESPONSE_MAX_TOKENS,
-      )
+      self.chat_sessions[topic_id] = self._create_chat_session(topic_id)
     chat_session = self.chat_sessions[topic_id]
     chat_session.add_message(history_message)
 
@@ -184,8 +176,8 @@ class Minerva:
     )
 
   def _get_topic_id(self, message: TelegramMessage) -> int:
-    # The General topic doesn't have a thread_id; we default to 0 for it
-    return message.message_thread_id or 0
+    # The General topic doesn't have a "message_thread_id"
+    return message.message_thread_id or GENERAL_TOPIC_ID
 
   def _is_reply_to_me(self, message: TelegramMessage) -> bool:
     if not message.reply_to_message:
@@ -210,3 +202,21 @@ class Minerva:
         return True
 
     return False
+
+  def _create_chat_session(self, topic_id: int) -> ChatSession:
+    return ChatSession(
+      bot=cast(Bot, self.application.bot),
+      ai_username=self.username,
+      openai_client=self.openai,
+      openai_model_name=self.openai_model,
+      max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
+      max_history_tokens=HISTORY_MAX_TOKENS,
+      prompt=str(self.prompt),
+      tools=self.tools,
+      chat_id=self.chat_id,
+      topic_id=topic_id,
+      max_create_response_retry_count=MAX_RETRY_COUNT,
+      max_create_response_tool_use_count=MAX_TOOL_USE_COUNT,
+      max_telegram_message_length_char=MAX_TELEGRAM_MESSAGE_LENGTH_CHAR,
+      max_tool_response_tokens=TOOL_RESPONSE_MAX_TOKENS,
+    )

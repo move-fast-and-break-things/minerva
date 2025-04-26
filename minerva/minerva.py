@@ -3,7 +3,6 @@ from typing import Optional, cast
 
 from openai import AsyncOpenAI
 
-
 from telegram import Update, Message as TelegramMessage, User as TelegramUser, Bot
 from telegram.constants import MessageEntityType, ChatType, ChatMemberStatus, ChatAction
 from telegram.ext import (

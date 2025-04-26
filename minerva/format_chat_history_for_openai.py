@@ -4,7 +4,7 @@ from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_content_part_param import ChatCompletionContentPartParam
 
 
-def format_chat_history_for_openai(system_prompt: str, chat_history: MessageHistory):
+def format_chat_history_for_openai(system_prompt: str, chat_history: MessageHistory) -> list[ChatCompletionMessageParam]:
   messages: list[ChatCompletionMessageParam] = [{"role": "system", "content": system_prompt}]
   for message in chat_history.history:
     if message.author.startswith(TOOL_PREFIX):

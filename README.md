@@ -10,8 +10,8 @@
 
 ## How can I add Minerva to my Telegram group (chat)?
 
-By default, the bot uses the `gpt-4.1-2025-04-14` model from OpenAI, which costs
-[$8.00 / 1M output tokens](https://openai.com/pricing). You can use
+By default, the bot uses the `gpt-5-2025-08-07` model from OpenAI, which costs
+[$10.00 / 1M output tokens](https://platform.openai.com/docs/models/gpt-5). You can use
 [this online tokenizer from OpenAI](https://platform.openai.com/tokenizer) to
 estimate how many tokens it will take to encode your text.
 

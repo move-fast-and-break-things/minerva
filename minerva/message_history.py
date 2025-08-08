@@ -6,7 +6,10 @@ from minerva.config import OPENAI_MODEL
 
 TOKENIZER = (
   tiktoken.get_encoding("o200k_base")
-  if OPENAI_MODEL.startswith("gpt-4.1-") or OPENAI_MODEL.startswith("gpt-5-")
+  if OPENAI_MODEL == "gpt-4.1"
+  or OPENAI_MODEL.startswith("gpt-4.1-")
+  or OPENAI_MODEL == "gpt-5"
+  or OPENAI_MODEL.startswith("gpt-5-")
   else tiktoken.encoding_for_model(OPENAI_MODEL)
 )
 

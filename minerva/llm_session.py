@@ -1,5 +1,5 @@
 import json
-from openai import AsyncOpenAI
+from openai import NOT_GIVEN, AsyncOpenAI
 
 from minerva.format_chat_history_for_openai import format_chat_history_for_openai
 from minerva.message_history import Message, MessageHistory
@@ -49,6 +49,9 @@ class LlmSession:
       temperature=1,
       max_completion_tokens=self.max_completion_tokens,
       user=user_id,
+      reasoning_effort="minimal"
+      if self.openai_model_name == "gpt-5" or self.openai_model_name.startswith("gpt-5-")
+      else NOT_GIVEN,
     )
 
     answer = response.choices[0].message.content

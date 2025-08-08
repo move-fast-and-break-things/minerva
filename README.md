@@ -16,7 +16,7 @@ By default, the bot uses the `gpt-4.1-2025-04-14` model from OpenAI, which costs
 estimate how many tokens it will take to encode your text.
 
 You can switch to a different OpenAI model by defining the `OPENAI_MODEL` environment variable.
-For example, `OPENAI_MODEL=gpt-4o` will make Minerva use the latest GPT-4o model.
+For example, `OPENAI_MODEL=gpt-5` will make Minerva use the latest GPT-5 model.
 
 To run Minerva, you'll need to:
 - [install poetry](https://python-poetry.org/docs/#installation)

@@ -46,9 +46,7 @@ class LlmSession:
     response = await self.openai_client.chat.completions.create(
       model=self.openai_model_name,
       messages=messages,
-      temperature=0.8,
-      frequency_penalty=0.7,
-      presence_penalty=0.3,
+      temperature=1,
       max_completion_tokens=self.max_completion_tokens,
       user=user_id,
     )

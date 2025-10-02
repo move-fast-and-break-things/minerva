@@ -17,6 +17,7 @@ pyparsing = "^3.1.4"
 lxml = {extras = ["html-clean"], version = "^5.3.0"}
 icalendar = "^5.0.13"
 recurring-ical-events = "^3.2.0"
+pypdf2 = "^3.0.1"
 
 [tool.poetry.group.dev.dependencies]
 lxml-stubs = "^0.5.1"

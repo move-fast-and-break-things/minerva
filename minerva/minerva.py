@@ -2,6 +2,10 @@ from typing import cast
 
 from openai import AsyncOpenAI
 
+import PyPDF2
+from io import BytesIO
+
+
 from telegram import (
   Update,
   Message as TelegramMessage,
@@ -87,7 +91,7 @@ class Minerva:
 
     print("Starting Minerva with prompt:\n", self.prompt)
 
-    self.application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.TEXT, self.on_message))
+    self.application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.ALL, self.on_message))
 
     self.application.add_handler(
       ChatMemberHandler(
@@ -122,7 +126,7 @@ class Minerva:
       return
 
     if not message.text and not message.photo and not message.document:
-      # Only text,photo and .txt files are supported
+      # Only text, photo, .txt and .pdf files are supported
       return
     
     if not message.from_user:
@@ -159,10 +163,24 @@ class Minerva:
       # If the user uploads multiple photos in a single message, Telegram API
       # will emit different message events for them
       # TODO(yurij): wait for other photos here
-    elif message.document and message.document.mime_type == "text/plain":
+    elif message.document:
       file = await message.document.get_file()
-      file_content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
       topic_id = self._get_topic_id(message)
+
+      if message.document.mime_type == "text/plain":
+        file_content = (await file.download_as_bytearray()).decode("utf-8", errors="ignore")
+
+      elif message.document.mime_type == "application/pdf":
+        pdf_bytes = await file.download_as_bytearray()
+        pdf_reader = PyPDF2.PdfReader(BytesIO(pdf_bytes))
+        pdf_text = ""
+        for page in pdf_reader.pages:
+            pdf_text += page.extract_text() + "\n"
+        file_content = f"Uploaded PDF '{message.document.file_name}':\n{pdf_text}\nFor now please only acknowledge the upload and say you can help with follow-up questions."
+
+      else:
+        await message.reply_text("Only .txt and .pdf files are supported.")
+        return
       
       # Context to only awknowledge the upload and wait for followup 
       # as telegram does not allow to tag bot in document caption

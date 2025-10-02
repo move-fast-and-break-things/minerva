@@ -39,7 +39,6 @@ You can also run Minerva using docker. To run Minerva in docker, follow the inst
 ```sh
 docker compose up
 ```
-
 ## Contributing
 
 This repository follows the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) standard.

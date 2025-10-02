@@ -37,10 +37,19 @@ def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
   Convert arguments to the correct types according to the tool's signature.
   """
 
-  tool_call = (
+  # Support robust argument parsing including quoted strings (single/double),
+  # escaped quotes with backslash, and multiline content inside quotes.
+  quoted_single = cast(Any, pp.QuotedString("'", escChar="\\", multiline=True))
+  quoted_double = cast(Any, pp.QuotedString('"', escChar="\\", multiline=True))
+  simple_token = cast(Any, pp.Word(pp.alphanums + "._-:/"))
+
+  arg_expr = quoted_single | quoted_double | simple_token
+
+  tool_call = cast(
+    Any,
     pp.Word(pp.alphanums + "_").setResultsName("tool_name")
     + pp.Suppress("(")
-    + pp.Optional(pp.delimitedList(pp.Word(pp.alphanums + "_\"':/.-"), delim=","))
+    + pp.Optional(pp.delimitedList(arg_expr, delim=","))
     + pp.Suppress(")")
   )
   parsed = tool_call.parseString(message)
@@ -56,11 +65,13 @@ def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
   if len(args) != len(tool_signature.parameters):
     raise ValueError("The number of arguments does not match the tool's signature.")
 
-  typed_args = []
+  typed_args: list[Any] = []
   for arg, param in zip(args, tool_signature.parameters.values()):
     if param.annotation is str:
-      # strip quotes around the string
-      typed_args.append(arg[1:-1])
+      if isinstance(arg, str):
+        typed_args.append(arg)
+      else:
+        typed_args.append(str(arg))
     else:
       typed_args.append(param.annotation(arg))
 

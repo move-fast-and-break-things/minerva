@@ -42,7 +42,7 @@ docker compose up
 
 ## Telegram Demo
 
-![Alt text](minerva/Minerva-Telegram-demo.gif)
+![Alt text](Minerva-Telegram-demo.gif)
 
 ## Contributing
 

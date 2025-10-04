@@ -10,7 +10,7 @@ GenericToolFn = Callable[..., Coroutine[Any, Any, str]]
 
 def get_tool_signature(tool: GenericToolFn) -> Signature:
   """Get the signature of a tool, excluding **kwargs.
-  
+
   We exclude **kwargs because LLM doesn't care about them, they are passed
   automatically by our runtime.
   """

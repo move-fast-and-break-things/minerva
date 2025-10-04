@@ -1,17 +1,19 @@
+from typing import Unpack
 from minerva.tool_utils import GenericToolFn, ToolCall, format_tool, parse_tool_call
+from minerva.tools.tool_kwargs import DefaultToolKwargs
 
 
-async def sum(a: int, b: int) -> str:
+async def sum(a: int, b: int, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Sum two numbers."""
   return str(a + b)
 
 
-async def do_x() -> str:
+async def do_x(**kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Does X."""
   return "done"
 
 
-async def fetch(url: str) -> str:
+async def fetch(url: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   return "this is a mock function"
 
 

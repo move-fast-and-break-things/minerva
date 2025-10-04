@@ -1,4 +1,4 @@
-from inspect import signature
+from inspect import signature, Parameter, Signature
 from typing import Any, Coroutine, NamedTuple, Callable, cast
 import pyparsing as pp
 
@@ -8,9 +8,18 @@ TOOL_PREFIX = "TOOL-"
 GenericToolFn = Callable[..., Coroutine[Any, Any, str]]
 
 
+def get_tool_signature(tool: GenericToolFn) -> Signature:
+  sig = signature(tool)
+  filtered_params = [
+    param for param in sig.parameters.values() if param.kind != Parameter.VAR_KEYWORD
+  ]
+  filtered_sig = sig.replace(parameters=filtered_params)
+  return filtered_sig
+
+
 def format_tool(name: str, tool: GenericToolFn) -> str:
   return f"""Name: {name}
-Signature: {signature(tool)}
+Signature: {get_tool_signature(tool)}
 Description: {tool.__doc__}
 """
 
@@ -50,7 +59,7 @@ def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
     pp.Word(pp.alphanums + "_").setResultsName("tool_name")
     + pp.Suppress("(")
     + pp.Optional(pp.delimitedList(arg_expr, delim=","))
-    + pp.Suppress(")")
+    + pp.Suppress(")"),
   )
   parsed = tool_call.parseString(message)
   tool_name = cast(str, parsed["tool_name"])
@@ -61,7 +70,7 @@ def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
   except KeyError:
     raise ValueError(f"Tool {tool_name} not found.")
 
-  tool_signature = signature(tool)
+  tool_signature = get_tool_signature(tool)
   if len(args) != len(tool_signature.parameters):
     raise ValueError("The number of arguments does not match the tool's signature.")
 

@@ -1,7 +1,6 @@
 from typing import Optional
-from io import BytesIO
 from openai import AsyncOpenAI
-from telegram import Bot, InputFile
+from telegram import Bot
 from minerva.llm_session import LlmSession
 from minerva.markdown_splitter import split_markdown
 from minerva.message_history import Message, trim_by_token_size
@@ -154,19 +153,13 @@ class ChatSession:
           return
 
         try:
-          # Special handling for file sending
-          if tool_call.tool_name == "send_text_file":
-            filename, content = tool_call.args  # type: ignore[misc]
-            data = content.encode("utf-8")
-            input_file = InputFile(BytesIO(data), filename=filename)
-            await self.bot.send_document(
-              chat_id=self.chat_id,
-              document=input_file,
-              message_thread_id=self.topic_id,
-              reply_to_message_id=reply_to_message_id,
-            )
-
-          tool_response = await self.tools[tool_call.tool_name](*tool_call.args)
+          tool_response = await self.tools[tool_call.tool_name](
+            *tool_call.args,
+            bot=self.bot,
+            chat_id=self.chat_id,
+            topic_id=self.topic_id,
+            reply_to_message_id=reply_to_message_id,
+          )
           # Ensure we won't blow up the conversation history with a huge tool response
           truncated_tool_response = trim_by_token_size(
             tool_response,

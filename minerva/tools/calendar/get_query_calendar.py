@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
+from typing import Unpack
 import icalendar
 import httpx
 
 from minerva.tools.calendar.query_icalendar import query_icalendar
+from minerva.tools.tool_kwargs import DefaultToolKwargs
 
 
 def get_query_calendar(calendar_url: str):
-  async def query_calendar(next_days: int) -> str:
+  async def query_calendar(next_days: int, **kwargs: Unpack[DefaultToolKwargs]) -> str:
     """Query the event calendar for the next `next_days` days.
 
     Args:

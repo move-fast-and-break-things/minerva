@@ -1,8 +1,10 @@
-from typing import Any, cast
+from typing import Any, Unpack, cast
 import httpx
 import lxml
 import lxml.html
-import lxml.html.clean  # type: ignore
+import lxml.html.clean
+
+from minerva.tools.tool_kwargs import DefaultToolKwargs  # type: ignore
 
 TIMEOUT_SEC = 2
 
@@ -28,7 +30,7 @@ LXML_CLEANER = cast(
 )
 
 
-async def fetch_html(url: str) -> str:
+async def fetch_html(url: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Take an url and return clean HTML content of the page, without JS, styles, or attributes.
 
   Use this tool when you need to visit a website and fetch its content.

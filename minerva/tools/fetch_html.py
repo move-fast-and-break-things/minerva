@@ -53,8 +53,8 @@ async def fetch_html(url: str) -> str:
 
   #   return clean_html(response.text)
 
-  async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+  async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
         page = await browser.new_page()
         page.set_default_timeout(TIMEOUT_SEC * 1000)
 

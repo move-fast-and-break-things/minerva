@@ -36,22 +36,6 @@ async def fetch_html(url: str) -> str:
   Use this tool when you need to visit a website and fetch its content.
   """
 
-  # async with httpx.AsyncClient() as client:
-  #   response = await client.get(
-  #     url,
-  #     timeout=TIMEOUT_SEC,
-  #     headers={
-  #       "User-Agent": "Minerva AI Bot - (https://github.com/move-fast-and-break-things/minerva)"
-  #     },
-  #     follow_redirects=True,
-  #   )
-  #   response.raise_for_status()
-
-  #   # raise if the response is not text
-  #   if not response.headers.get("content-type", "").startswith("text/"):
-  #     raise ValueError(f"Unexpected content type: {response.headers.get('content-type')}")
-
-  #   return clean_html(response.text)
 
   async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=True)

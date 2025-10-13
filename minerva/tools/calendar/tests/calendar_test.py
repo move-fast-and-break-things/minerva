@@ -4,6 +4,7 @@ import icalendar
 import pytest
 from datetime import datetime, timezone
 from os import path
+from unittest.mock import Mock
 
 from freezegun import freeze_time
 from freezegun.api import FrozenDateTimeFactory
@@ -13,9 +14,19 @@ from minerva.tools.calendar.get_query_calendar import get_query_calendar
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from threading import Thread
 
-from minerva.tools.calendar.query_icalendar import query_icalendar
+from minerva.tools.calendar.query_icalendar import query_icalendar, Event
 
 DEFAULT_ICS_PATH = path.join(path.dirname(__file__), "fixtures", "test-calendar.ics")
+
+
+def get_mock_tool_kwargs():
+  """Create mock tool kwargs for testing."""
+  return {
+    "bot": Mock(),
+    "chat_id": 12345,
+    "topic_id": 0,
+    "reply_to_message_id": 0,
+  }
 
 
 def getMockCalendarRequestHandler(ics_paths: Optional[list[str]] = None):
@@ -70,7 +81,7 @@ def test_query_ics():
     ics = f.read()
     cal = icalendar.Calendar.from_ical(ics)
 
-  events = query_icalendar(
+  events: list[Event] = query_icalendar(
     cal,
     datetime(2024, 9, 1, tzinfo=timezone.utc),
     datetime(2024, 9, 6, tzinfo=timezone.utc),
@@ -111,7 +122,7 @@ async def test_calendar_tool(httpd: HTTPServer):
   query_calendar = get_query_calendar(
     f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics"
   )
-  events = await query_calendar(14)
+  events: str = await query_calendar(14, **get_mock_tool_kwargs())
 
   assert (
     events
@@ -128,7 +139,7 @@ async def test_calendar_tool_no_events(httpd: HTTPServer):
   query_calendar = get_query_calendar(
     f"http://localhost:{httpd.server_port}/tests/fixtures/test-calendar.ics"
   )
-  events = await query_calendar(1)
+  events: str = await query_calendar(1, **get_mock_tool_kwargs())
 
   assert events == """No events found"""
 
@@ -142,7 +153,7 @@ async def test_calendar_tool_crashes_if_zero_days(httpd: HTTPServer):
   )
 
   try:
-    await query_calendar(0)
+    await query_calendar(0, **get_mock_tool_kwargs())
     assert False
   except ValueError as e:
     assert str(e) == "next_days must be at least 1"
@@ -157,7 +168,7 @@ async def test_calendar_tool_crashes_if_too_many_days(httpd: HTTPServer):
   )
 
   try:
-    await query_calendar(367)
+    await query_calendar(367, **get_mock_tool_kwargs())
     assert False
   except ValueError as e:
     assert str(e) == "next_days must be at most 366"
@@ -180,7 +191,7 @@ async def test_calendar_tool_refetches_calendar(
   # let the async refresh loop initialize
   await sleep(0.1)
 
-  events = await query_calendar(14)
+  events: str = await query_calendar(14, **get_mock_tool_kwargs())
 
   assert (
     events
@@ -193,6 +204,6 @@ Video call: https://meet.google.com/broken-link-3"""
   # let the async refresh loop refetch the calendar
   await sleep(0.1)
 
-  events = await query_calendar(14)
+  events = await query_calendar(14, **get_mock_tool_kwargs())
 
   assert events == """No events found"""

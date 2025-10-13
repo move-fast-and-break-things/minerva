@@ -153,7 +153,13 @@ class ChatSession:
           return
 
         try:
-          tool_response = await self.tools[tool_call.tool_name](*tool_call.args)
+          tool_response = await self.tools[tool_call.tool_name](
+            *tool_call.args,
+            bot=self.bot,
+            chat_id=self.chat_id,
+            topic_id=self.topic_id,
+            reply_to_message_id=reply_to_message_id,
+          )
           # Ensure we won't blow up the conversation history with a huge tool response
           truncated_tool_response = trim_by_token_size(
             tool_response,

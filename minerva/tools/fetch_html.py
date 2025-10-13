@@ -1,34 +1,33 @@
-from typing import Any, cast
+from typing import Unpack
 import httpx
 import lxml
 import lxml.html
-import lxml.html.clean  # type: ignore
+from lxml.html import clean
+
+from minerva.tools.tool_kwargs import DefaultToolKwargs  # type: ignore
 
 TIMEOUT_SEC = 2
 
-LXML_CLEANER = cast(
-  Any,
-  lxml.html.clean.Cleaner(
-    scripts=True,
-    javascript=True,
-    comments=True,
-    style=True,
-    inline_style=True,
-    meta=True,
-    page_structure=False,
-    processing_instructions=True,
-    annoying_tags=True,
-    remove_tags=["html", "head", "body"],
-    kill_tags=["header", "footer"],
-    remove_unknown_tags=True,
-    # remove all attrs
-    safe_attrs_only=True,
-    safe_attrs=[],
-  ),
+LXML_CLEANER = clean.Cleaner(
+  scripts=True,
+  javascript=True,
+  comments=True,
+  style=True,
+  inline_style=True,
+  meta=True,
+  page_structure=False,
+  processing_instructions=True,
+  annoying_tags=True,
+  remove_tags=["html", "head", "body"],
+  kill_tags=["header", "footer"],
+  remove_unknown_tags=True,
+  # remove all attrs
+  safe_attrs_only=True,
+  safe_attrs=[],
 )
 
 
-async def fetch_html(url: str) -> str:
+async def fetch_html(url: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Take an url and return clean HTML content of the page, without JS, styles, or attributes.
 
   Use this tool when you need to visit a website and fetch its content.

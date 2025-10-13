@@ -23,6 +23,7 @@ from minerva.config import AI_NAME, CALENDAR_ICS_URL
 from minerva.message_history import ImageContent, Message
 from minerva.prompt import USERNAMELESS_ID_PREFIX, Prompt
 from minerva.tools.fetch_html import fetch_html
+from minerva.tools.send_text_file import send_text_file
 from minerva.tool_utils import GenericToolFn, format_tool_username
 
 MAX_TELEGRAM_MESSAGE_LENGTH_CHAR = 2000
@@ -52,6 +53,7 @@ class Minerva:
     self.openai_model = openai_model
     self.tools: dict[str, GenericToolFn] = {
       "fetch_html": fetch_html,
+      "send_text_file": send_text_file,
     }
 
     if CALENDAR_ICS_URL:

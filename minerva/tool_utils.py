@@ -1,4 +1,4 @@
-from inspect import signature
+from inspect import signature, Parameter, Signature
 from typing import Any, Coroutine, NamedTuple, Callable, cast
 import pyparsing as pp
 
@@ -8,9 +8,24 @@ TOOL_PREFIX = "TOOL-"
 GenericToolFn = Callable[..., Coroutine[Any, Any, str]]
 
 
+def get_tool_signature(tool: GenericToolFn) -> Signature:
+  """Get the signature of a tool, excluding **kwargs.
+
+  We exclude **kwargs because LLM doesn't care about them, they are passed
+  automatically by our runtime.
+  """
+
+  sig = signature(tool)
+  filtered_params = [
+    param for param in sig.parameters.values() if param.kind != Parameter.VAR_KEYWORD
+  ]
+  filtered_sig = sig.replace(parameters=filtered_params)
+  return filtered_sig
+
+
 def format_tool(name: str, tool: GenericToolFn) -> str:
   return f"""Name: {name}
-Signature: {signature(tool)}
+Signature: {get_tool_signature(tool)}
 Description: {tool.__doc__}
 """
 
@@ -37,11 +52,20 @@ def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
   Convert arguments to the correct types according to the tool's signature.
   """
 
-  tool_call = (
+  # Support robust argument parsing including quoted strings (single/double),
+  # escaped quotes with backslash, and multiline content inside quotes.
+  quoted_single = cast(Any, pp.QuotedString("'", escChar="\\", multiline=True))
+  quoted_double = cast(Any, pp.QuotedString('"', escChar="\\", multiline=True))
+  simple_token = cast(Any, pp.Word(pp.alphanums + "._-:/"))
+
+  arg_expr = quoted_single | quoted_double | simple_token
+
+  tool_call = cast(
+    Any,
     pp.Word(pp.alphanums + "_").setResultsName("tool_name")
     + pp.Suppress("(")
-    + pp.Optional(pp.delimitedList(pp.Word(pp.alphanums + "_\"':/.-"), delim=","))
-    + pp.Suppress(")")
+    + pp.Optional(pp.delimitedList(arg_expr, delim=","))
+    + pp.Suppress(")"),
   )
   parsed = tool_call.parseString(message)
   tool_name = cast(str, parsed["tool_name"])
@@ -52,15 +76,17 @@ def parse_tool_call(message: str, tools: dict[str, GenericToolFn]) -> ToolCall:
   except KeyError:
     raise ValueError(f"Tool {tool_name} not found.")
 
-  tool_signature = signature(tool)
+  tool_signature = get_tool_signature(tool)
   if len(args) != len(tool_signature.parameters):
     raise ValueError("The number of arguments does not match the tool's signature.")
 
-  typed_args = []
+  typed_args: list[Any] = []
   for arg, param in zip(args, tool_signature.parameters.values()):
     if param.annotation is str:
-      # strip quotes around the string
-      typed_args.append(arg[1:-1])
+      if isinstance(arg, str):
+        typed_args.append(arg)
+      else:
+        typed_args.append(str(arg))
     else:
       typed_args.append(param.annotation(arg))
 

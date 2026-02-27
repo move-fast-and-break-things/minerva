@@ -34,17 +34,20 @@ class FakeBot:
 
 
 class FakeHttpxResponse:
-  def __init__(self, content: bytes):
+  def __init__(self, content: bytes, content_type: str = "image/png"):
     self.content = content
+    self.headers = {"content-type": content_type}
 
   def raise_for_status(self):
     return None
 
 
 class FakeHttpxClient:
-  def __init__(self, content: bytes):
+  def __init__(self, content: bytes, content_type: str = "image/png"):
     self.content = content
+    self.content_type = content_type
     self.requested_url: str | None = None
+    self.request_timeout: int | None = None
 
   async def __aenter__(self):
     return self
@@ -52,9 +55,10 @@ class FakeHttpxClient:
   async def __aexit__(self, exc_type: Any, exc: Any, tb: Any):
     return None
 
-  async def get(self, url: str):
+  async def get(self, url: str, **kwargs: Any):
     self.requested_url = url
-    return FakeHttpxResponse(content=self.content)
+    self.request_timeout = kwargs.get("timeout")
+    return FakeHttpxResponse(content=self.content, content_type=self.content_type)
 
 
 def get_default_tool_kwargs():
@@ -147,9 +151,38 @@ async def test_generate_image_downloads_image_when_only_url_is_returned(monkeypa
 
   image_bytes = b"fake-png-bytes"
   fake_httpx_client = FakeHttpxClient(content=image_bytes)
-  monkeypatch.setattr("minerva.tools.generate_image.httpx.AsyncClient", lambda: fake_httpx_client)
+  async_client_kwargs: dict[str, Any] = {}
+
+  def fake_async_client(**kwargs: Any):
+    async_client_kwargs.update(kwargs)
+    return fake_httpx_client
+
+  monkeypatch.setattr("minerva.tools.generate_image.httpx.AsyncClient", fake_async_client)
 
   await generate_image("test", **kwargs)
 
   assert fake_httpx_client.requested_url == "https://example.com/image.png"
+  assert fake_httpx_client.request_timeout == 10
+  assert async_client_kwargs["follow_redirects"] is True
   assert len(history) == 1
+
+
+@pytest.mark.asyncio
+async def test_generate_image_fails_when_image_url_has_unexpected_content_type(
+  monkeypatch: pytest.MonkeyPatch,
+):
+  response = SimpleNamespace(
+    data=[SimpleNamespace(b64_json=None, url="https://example.com/image.png")],
+  )
+  openai_client = FakeOpenAIClient(response=response)
+  kwargs, _, _ = get_default_tool_kwargs()
+  kwargs["openai_client"] = openai_client
+
+  fake_httpx_client = FakeHttpxClient(content=b"{}", content_type="application/json")
+  monkeypatch.setattr(
+    "minerva.tools.generate_image.httpx.AsyncClient",
+    lambda **_kwargs: fake_httpx_client,
+  )
+
+  with pytest.raises(ValueError, match="Unexpected content type for generated image"):
+    await generate_image("test", **kwargs)

@@ -12,6 +12,16 @@ DEFAULT_IMAGE_SIZE = "1024x1024"
 DEFAULT_IMAGE_FORMAT = "png"
 
 
+def _get_image_dimensions(size: str) -> tuple[int, int]:
+  try:
+    width_px, height_px = [int(v) for v in size.split("x", 1)]
+    if width_px <= 0 or height_px <= 0:
+      raise ValueError("Image dimensions must be positive")
+    return width_px, height_px
+  except Exception:
+    return (1024, 1024)
+
+
 async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Generate an image using OpenAI and send it to the chat as photo + original file.
 
@@ -51,9 +61,12 @@ async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) 
     image_url = getattr(first_image, "url", None)
     if not image_url:
       raise ValueError("OpenAI returned image data in unexpected format")
-    async with httpx.AsyncClient() as client:
-      image_response = await client.get(image_url)
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+      image_response = await client.get(image_url, timeout=10)
     image_response.raise_for_status()
+    content_type = image_response.headers.get("content-type", "")
+    if not content_type.startswith("image/"):
+      raise ValueError(f"Unexpected content type for generated image: {content_type}")
     image_bytes = image_response.content
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
   filename = f"generated-image.{DEFAULT_IMAGE_FORMAT}"
@@ -74,7 +87,7 @@ async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) 
     reply_to_message_id=kwargs["reply_to_message_id"],
   )
 
-  width_px, height_px = [int(v) for v in DEFAULT_IMAGE_SIZE.split("x", 1)]
+  width_px, height_px = _get_image_dimensions(DEFAULT_IMAGE_SIZE)
   image_data_uri = f"data:image/{DEFAULT_IMAGE_FORMAT};base64,{image_b64}"
   add_message_to_history(
     Message(

@@ -1,4 +1,3 @@
-from types import TracebackType
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from typing import Any
@@ -14,17 +13,17 @@ ONE_PIXEL_PNG_B64 = (
 
 
 class FakeImagesClient:
-  def __init__(self, response: object):
+  def __init__(self, response: Any):
     self.response = response
-    self.calls: list[dict[str, object]] = []
+    self.calls: list[dict[str, Any]] = []
 
-  async def generate(self, **kwargs: object):
+  async def generate(self, **kwargs: Any):
     self.calls.append(kwargs)
     return self.response
 
 
 class FakeOpenAIClient:
-  def __init__(self, response: object):
+  def __init__(self, response: Any):
     self.images = FakeImagesClient(response)
 
 
@@ -50,12 +49,7 @@ class FakeHttpxClient:
   async def __aenter__(self):
     return self
 
-  async def __aexit__(
-    self,
-    exc_type: type[BaseException] | None,
-    exc: BaseException | None,
-    tb: TracebackType | None,
-  ):
+  async def __aexit__(self, exc_type: Any, exc: Any, tb: Any):
     return None
 
   async def get(self, url: str):
@@ -63,7 +57,7 @@ class FakeHttpxClient:
     return FakeHttpxResponse(content=self.content)
 
 
-def get_default_tool_kwargs() -> tuple[dict[str, Any], FakeBot, list[Any]]:
+def get_default_tool_kwargs():
   bot = FakeBot()
   history: list[Any] = []
   kwargs: dict[str, Any] = {

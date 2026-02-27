@@ -12,14 +12,6 @@ DEFAULT_IMAGE_SIZE = "1024x1024"
 DEFAULT_IMAGE_FORMAT = "png"
 
 
-def _get_image_dimensions(size: str) -> tuple[int, int]:
-  try:
-    width_str, height_str = size.split("x", 1)
-    return int(width_str), int(height_str)
-  except Exception:
-    return (1024, 1024)
-
-
 async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Generate an image using OpenAI and send it to the chat as photo + original file.
 
@@ -82,7 +74,7 @@ async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) 
     reply_to_message_id=kwargs["reply_to_message_id"],
   )
 
-  width_px, height_px = _get_image_dimensions(DEFAULT_IMAGE_SIZE)
+  width_px, height_px = [int(v) for v in DEFAULT_IMAGE_SIZE.split("x", 1)]
   image_data_uri = f"data:image/{DEFAULT_IMAGE_FORMAT};base64,{image_b64}"
   add_message_to_history(
     Message(

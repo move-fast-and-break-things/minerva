@@ -1,6 +1,7 @@
 import base64
 from io import BytesIO
 from typing import Unpack
+import httpx
 from telegram import InputFile
 
 from minerva.message_history import Image, ImageContent, Message
@@ -45,17 +46,24 @@ async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) 
     prompt=description,
     size=DEFAULT_IMAGE_SIZE,
     output_format=DEFAULT_IMAGE_FORMAT,
-    response_format="b64_json",
   )
 
   if not response.data:
     raise ValueError("OpenAI returned no image data")
 
-  image_b64 = response.data[0].b64_json
-  if not image_b64:
-    raise ValueError("OpenAI returned image data in unexpected format")
-
-  image_bytes = base64.b64decode(image_b64)
+  first_image = response.data[0]
+  image_b64 = getattr(first_image, "b64_json", None)
+  if image_b64:
+    image_bytes = base64.b64decode(image_b64)
+  else:
+    image_url = getattr(first_image, "url", None)
+    if not image_url:
+      raise ValueError("OpenAI returned image data in unexpected format")
+    async with httpx.AsyncClient() as client:
+      image_response = await client.get(image_url)
+    image_response.raise_for_status()
+    image_bytes = image_response.content
+    image_b64 = base64.b64encode(image_bytes).decode("utf-8")
   filename = f"generated-image.{DEFAULT_IMAGE_FORMAT}"
 
   image_file = InputFile(BytesIO(image_bytes), filename=filename)

@@ -1,3 +1,4 @@
+from types import TracebackType
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from typing import Any
@@ -31,6 +32,35 @@ class FakeBot:
   def __init__(self):
     self.send_photo = AsyncMock()
     self.send_document = AsyncMock()
+
+
+class FakeHttpxResponse:
+  def __init__(self, content: bytes):
+    self.content = content
+
+  def raise_for_status(self):
+    return None
+
+
+class FakeHttpxClient:
+  def __init__(self, content: bytes):
+    self.content = content
+    self.requested_url: str | None = None
+
+  async def __aenter__(self):
+    return self
+
+  async def __aexit__(
+    self,
+    exc_type: type[BaseException] | None,
+    exc: BaseException | None,
+    tb: TracebackType | None,
+  ):
+    return None
+
+  async def get(self, url: str):
+    self.requested_url = url
+    return FakeHttpxResponse(content=self.content)
 
 
 def get_default_tool_kwargs() -> tuple[dict[str, Any], FakeBot, list[Any]]:
@@ -88,7 +118,6 @@ async def test_generate_image():
   assert call["prompt"] == "red square"
   assert call["model"] == "gpt-image-1"
   assert call["size"] == "1024x1024"
-  assert call["response_format"] == "b64_json"
   assert call["output_format"] == "png"
 
 
@@ -111,3 +140,22 @@ async def test_generate_image_fails_when_b64_json_is_missing():
 
   with pytest.raises(ValueError, match="unexpected format"):
     await generate_image("test", **kwargs)
+
+
+@pytest.mark.asyncio
+async def test_generate_image_downloads_image_when_only_url_is_returned(monkeypatch: pytest.MonkeyPatch):
+  response = SimpleNamespace(
+    data=[SimpleNamespace(b64_json=None, url="https://example.com/image.png")],
+  )
+  openai_client = FakeOpenAIClient(response=response)
+  kwargs, _, history = get_default_tool_kwargs()
+  kwargs["openai_client"] = openai_client
+
+  image_bytes = b"fake-png-bytes"
+  fake_httpx_client = FakeHttpxClient(content=image_bytes)
+  monkeypatch.setattr("minerva.tools.generate_image.httpx.AsyncClient", lambda: fake_httpx_client)
+
+  await generate_image("test", **kwargs)
+
+  assert fake_httpx_client.requested_url == "https://example.com/image.png"
+  assert len(history) == 1

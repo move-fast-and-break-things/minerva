@@ -179,9 +179,13 @@ async def test_generate_image_fails_when_image_url_has_unexpected_content_type(
   kwargs["openai_client"] = openai_client
 
   fake_httpx_client = FakeHttpxClient(content=b"{}", content_type="application/json")
+
+  def fake_async_client(**kwargs: Any) -> FakeHttpxClient:
+    return fake_httpx_client
+
   monkeypatch.setattr(
     "minerva.tools.generate_image.httpx.AsyncClient",
-    lambda **_kwargs: fake_httpx_client,
+    fake_async_client,
   )
 
   with pytest.raises(ValueError, match="Unexpected content type for generated image"):

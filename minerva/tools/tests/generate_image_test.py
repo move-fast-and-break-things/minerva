@@ -159,12 +159,37 @@ async def test_generate_image_downloads_image_when_only_url_is_returned(monkeypa
 
   monkeypatch.setattr("minerva.tools.generate_image.httpx.AsyncClient", fake_async_client)
 
-  await generate_image("test", **kwargs)
+  result = await generate_image("test", **kwargs)
 
   assert fake_httpx_client.requested_url == "https://example.com/image.png"
   assert fake_httpx_client.request_timeout == 10
   assert async_client_kwargs["follow_redirects"] is True
   assert len(history) == 1
+  assert result.startswith("sent:generated-image.png:")
+  assert history[0].content.images[0].url.startswith("data:image/png;base64,")
+
+
+@pytest.mark.asyncio
+async def test_generate_image_url_fallback_uses_content_type_for_format(monkeypatch: pytest.MonkeyPatch):
+  response = SimpleNamespace(
+    data=[SimpleNamespace(b64_json=None, url="https://example.com/image.jpg")],
+  )
+  openai_client = FakeOpenAIClient(response=response)
+  kwargs, _, history = get_default_tool_kwargs()
+  kwargs["openai_client"] = openai_client
+
+  fake_httpx_client = FakeHttpxClient(content=b"fake-jpeg-bytes", content_type="image/jpeg")
+
+  def fake_async_client(**kwargs: Any):
+    return fake_httpx_client
+
+  monkeypatch.setattr("minerva.tools.generate_image.httpx.AsyncClient", fake_async_client)
+
+  result = await generate_image("test", **kwargs)
+
+  assert result.startswith("sent:generated-image.jpeg:")
+  assert len(history) == 1
+  assert history[0].content.images[0].url.startswith("data:image/jpeg;base64,")
 
 
 @pytest.mark.asyncio

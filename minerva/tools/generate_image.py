@@ -53,28 +53,30 @@ async def _request_image(openai_client: Any, description: str, image_model: str)
   return response.data[0]
 
 
-async def _download_image_bytes(image_url: str) -> bytes:
+async def _download_image_bytes(image_url: str) -> tuple[bytes, str]:
   async with httpx.AsyncClient(follow_redirects=True) as client:
     image_response = await client.get(image_url, timeout=IMAGE_DOWNLOAD_TIMEOUT_SEC)
   image_response.raise_for_status()
 
-  content_type = image_response.headers.get("content-type", "")
+  raw_content_type = image_response.headers.get("content-type", "")
+  content_type = raw_content_type.split(";", 1)[0].strip().lower()
   if not content_type.startswith("image/"):
-    raise ValueError(f"Unexpected content type for generated image: {content_type}")
-  return image_response.content
+    raise ValueError(f"Unexpected content type for generated image: {raw_content_type!r}")
+  image_format = content_type.removeprefix("image/")
+  return image_response.content, image_format
 
 
-async def _resolve_image_data(first_image: Any) -> tuple[bytes, str]:
+async def _resolve_image_data(first_image: Any) -> tuple[bytes, str, str]:
   image_b64 = getattr(first_image, "b64_json", None)
   if image_b64:
-    return base64.b64decode(image_b64), image_b64
+    return base64.b64decode(image_b64, validate=True), image_b64, DEFAULT_IMAGE_FORMAT
 
   image_url = getattr(first_image, "url", None)
   if not image_url:
     raise ValueError("OpenAI returned image data in unexpected format")
 
-  image_bytes = await _download_image_bytes(image_url)
-  return image_bytes, base64.b64encode(image_bytes).decode("utf-8")
+  image_bytes, image_format = await _download_image_bytes(image_url)
+  return image_bytes, base64.b64encode(image_bytes).decode("utf-8"), image_format
 
 
 async def _send_generated_image_to_telegram(
@@ -103,9 +105,10 @@ def _add_generated_image_to_history(
   add_message_to_history: Callable[[Message], None],
   ai_username: str,
   image_b64: str,
+  image_format: str,
 ) -> None:
   width_px, height_px = _get_image_dimensions(DEFAULT_IMAGE_SIZE)
-  image_data_uri = f"data:image/{DEFAULT_IMAGE_FORMAT};base64,{image_b64}"
+  image_data_uri = f"data:image/{image_format};base64,{image_b64}"
   add_message_to_history(
     Message(
       author=ai_username,
@@ -133,10 +136,10 @@ async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) 
   openai_client, ai_username, add_message_to_history = _get_required_runtime_data(kwargs)
   image_model = kwargs.get("openai_image_model", DEFAULT_IMAGE_MODEL)
   first_image = await _request_image(openai_client, description, image_model)
-  image_bytes, image_b64 = await _resolve_image_data(first_image)
+  image_bytes, image_b64, image_format = await _resolve_image_data(first_image)
 
-  filename = f"generated-image.{DEFAULT_IMAGE_FORMAT}"
+  filename = f"generated-image.{image_format}"
   await _send_generated_image_to_telegram(kwargs, filename, image_bytes)
-  _add_generated_image_to_history(add_message_to_history, ai_username, image_b64)
+  _add_generated_image_to_history(add_message_to_history, ai_username, image_b64, image_format)
 
   return f"sent:{filename}:{len(image_bytes)}"

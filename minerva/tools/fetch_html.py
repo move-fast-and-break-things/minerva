@@ -54,7 +54,6 @@ def _is_text_content_type(content_type: str) -> bool:
 
 class PlaywrightHtmlFetcher:
   def __init__(self, max_active_tabs: int = DEFAULT_MAX_ACTIVE_TABS):
-    self._max_active_tabs = max_active_tabs
     self._tabs_semaphore = asyncio.Semaphore(max_active_tabs)
     self._startup_lock = asyncio.Lock()
     self._browser = None
@@ -69,8 +68,14 @@ class PlaywrightHtmlFetcher:
         return self._browser
 
       async_playwright, _, _ = _get_playwright_api()
-      self._playwright = await async_playwright().start()
-      self._browser = await self._playwright.chromium.launch(headless=True)
+      pw = await async_playwright().start()
+      try:
+        browser = await pw.chromium.launch(headless=True)
+      except Exception:
+        await pw.stop()
+        raise
+      self._playwright = pw
+      self._browser = browser
       return self._browser
 
   async def close(self):
@@ -89,29 +94,29 @@ class PlaywrightHtmlFetcher:
     async with self._tabs_semaphore:
       page = await browser.new_page(user_agent=MINERVA_USER_AGENT)
       try:
-        response = await page.goto(
-          url,
-          wait_until="domcontentloaded",
-          timeout=NAVIGATION_TIMEOUT_MS,
-        )
-      except playwright_error as err:
-        raise ValueError(f"Failed to load page {url}: {err}") from err
+        try:
+          response = await page.goto(
+            url,
+            wait_until="domcontentloaded",
+            timeout=NAVIGATION_TIMEOUT_MS,
+          )
+        except playwright_error as err:
+          raise ValueError(f"Failed to load page {url}: {err}") from err
 
-      if response is None:
-        raise ValueError("Failed to load page: empty browser response")
+        if response is None:
+          raise ValueError("Failed to load page: empty browser response")
 
-      headers = await response.all_headers()
-      content_type = headers.get("content-type", "")
-      if content_type and not _is_text_content_type(content_type):
-        raise ValueError(f"Unexpected content type: {content_type}")
+        headers = await response.all_headers()
+        content_type = headers.get("content-type", "")
+        if content_type and not _is_text_content_type(content_type):
+          raise ValueError(f"Unexpected content type: {content_type}")
 
-      try:
-        # Dynamic websites may still be hydrating after DOM content is loaded.
-        await page.wait_for_load_state("networkidle", timeout=NETWORK_IDLE_TIMEOUT_MS)
-      except playwright_timeout_error:
-        pass
+        try:
+          # Dynamic websites may still be hydrating after DOM content is loaded.
+          await page.wait_for_load_state("networkidle", timeout=NETWORK_IDLE_TIMEOUT_MS)
+        except playwright_timeout_error:
+          pass
 
-      try:
         return await page.content()
       finally:
         await page.close()

@@ -3,7 +3,12 @@ from typing import Any, cast
 
 import pytest
 
-from minerva.tools.fetch_html import clean_html, close_fetch_html_browser, fetch_html
+from minerva.tools.fetch_html import (
+  PlaywrightHtmlFetcher,
+  clean_html,
+  close_fetch_html_browser,
+  fetch_html,
+)
 
 
 def test_clean_html():
@@ -66,3 +71,28 @@ async def test_close_fetch_html_browser_calls_fetcher_close(monkeypatch: pytest.
   await close_fetch_html_browser()
 
   assert mock_close.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_page_is_closed_on_content_type_error(monkeypatch: pytest.MonkeyPatch):
+  mock_response = AsyncMock()
+  mock_response.all_headers = AsyncMock(return_value={"content-type": "application/pdf"})
+
+  mock_page = AsyncMock()
+  mock_page.goto = AsyncMock(return_value=mock_response)
+
+  mock_browser = AsyncMock()
+  mock_browser.new_page = AsyncMock(return_value=mock_page)
+
+  monkeypatch.setattr(
+    "minerva.tools.fetch_html._get_playwright_api",
+    lambda: (None, Exception, Exception),
+  )
+
+  fetcher = PlaywrightHtmlFetcher()
+  fetcher._browser = mock_browser
+
+  with pytest.raises(ValueError, match="Unexpected content type"):
+    await fetcher.fetch_rendered_html("https://example.com/file.pdf")
+
+  mock_page.close.assert_awaited_once()

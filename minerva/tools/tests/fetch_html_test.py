@@ -90,7 +90,7 @@ async def test_page_is_closed_on_content_type_error(monkeypatch: pytest.MonkeyPa
   )
 
   fetcher = PlaywrightHtmlFetcher()
-  fetcher._browser = mock_browser
+  monkeypatch.setattr(fetcher, "_ensure_browser", AsyncMock(return_value=mock_browser))
 
   with pytest.raises(ValueError, match="Unexpected content type"):
     await fetcher.fetch_rendered_html("https://example.com/file.pdf")

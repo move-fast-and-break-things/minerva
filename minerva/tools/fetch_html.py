@@ -10,7 +10,7 @@ from minerva.tools.tool_kwargs import DefaultToolKwargs  # type: ignore
 DEFAULT_MAX_ACTIVE_TABS = 3
 NAVIGATION_TIMEOUT_MS = 10_000
 NETWORK_IDLE_TIMEOUT_MS = 2_000
-MINERVA_USER_AGENT = "Minerva Bot - (https://github.com/move-fast-and-break-things/minerva)"
+MINERVA_USER_AGENT = "Minerva AI Bot"
 
 LXML_CLEANER = clean.Cleaner(
   scripts=True,

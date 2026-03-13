@@ -19,10 +19,11 @@ from telegram.ext import (
 
 from minerva.chat_session import ChatSession
 from minerva.get_image_from_telegram_photo import get_image_from_telegram_photo
-from minerva.config import AI_NAME, CALENDAR_ICS_URL
+from minerva.config import AI_NAME, CALENDAR_ICS_URL, OPENAI_IMAGE_MODEL
 from minerva.message_history import ImageContent, Message
 from minerva.prompt import USERNAMELESS_ID_PREFIX, Prompt
 from minerva.tools.fetch_html import close_fetch_html_browser, fetch_html
+from minerva.tools.generate_image import generate_image
 from minerva.tools.send_text_file import send_text_file
 from minerva.tool_utils import GenericToolFn, format_tool_username
 
@@ -54,6 +55,7 @@ class Minerva:
     self.tools: dict[str, GenericToolFn] = {
       "fetch_html": fetch_html,
       "send_text_file": send_text_file,
+      "generate_image": generate_image,
     }
 
     if CALENDAR_ICS_URL:
@@ -214,6 +216,7 @@ class Minerva:
       ai_username=self.username,
       openai_client=self.openai,
       openai_model_name=self.openai_model,
+      openai_image_model_name=OPENAI_IMAGE_MODEL,
       max_completion_tokens=OPENAI_RESPONSE_MAX_TOKENS,
       max_history_tokens=HISTORY_MAX_TOKENS,
       prompt=str(self.prompt),

@@ -4,6 +4,7 @@ from minerva.config import (
   AI_NAME,
   OPENAI_API_KEY,
   OPENAI_API_BASE,
+  OPENAI_IMAGE_MODEL,
   OPENAI_MODEL,
   TELEGRAM_BOT_TOKEN,
   TELEGRAM_CHAT_ID,
@@ -28,6 +29,8 @@ def main():
       raise ValueError("TELEGRAM_CHAT_ID is required")
     if not OPENAI_MODEL:
       raise ValueError("OPENAI_MODEL is required")
+    if not OPENAI_IMAGE_MODEL:
+      raise ValueError("OPENAI_IMAGE_MODEL is required")
 
     minerva = Minerva(
       application,

@@ -41,7 +41,7 @@ def _get_playwright_api() -> tuple[Callable[[], Any], type[Exception], type[Exce
     )
   except ModuleNotFoundError as err:
     raise RuntimeError(
-      "Playwright is not installed. Install dependencies and run `playwright install chromium`."
+      "Playwright is not installed. Install dependencies and run `poetry run playwright install chromium`."
     ) from err
 
   return async_playwright, PlaywrightError, PlaywrightTimeoutError
@@ -58,6 +58,11 @@ class PlaywrightHtmlFetcher:
     self._startup_lock = asyncio.Lock()
     self._browser = None
     self._playwright = None
+    self._closing = False
+    self._active_pages = 0
+    self._active_pages_lock = asyncio.Lock()
+    self._drained = asyncio.Event()
+    self._drained.set()
 
   async def _ensure_browser(self):
     if self._browser is not None:
@@ -79,6 +84,8 @@ class PlaywrightHtmlFetcher:
       return self._browser
 
   async def close(self):
+    self._closing = True
+    await self._drained.wait()
     async with self._startup_lock:
       if self._browser is not None:
         await self._browser.close()
@@ -88,8 +95,15 @@ class PlaywrightHtmlFetcher:
         self._playwright = None
 
   async def fetch_rendered_html(self, url: str) -> str:
+    if self._closing:
+      raise RuntimeError("Fetcher is shutting down")
+
     browser = await self._ensure_browser()
     _, playwright_error, playwright_timeout_error = _get_playwright_api()
+
+    async with self._active_pages_lock:
+      self._active_pages += 1
+      self._drained.clear()
 
     async with self._tabs_semaphore:
       page = await browser.new_page(user_agent=MINERVA_USER_AGENT)
@@ -106,6 +120,9 @@ class PlaywrightHtmlFetcher:
         if response is None:
           raise ValueError("Failed to load page: empty browser response")
 
+        if not response.ok:
+          raise ValueError(f"HTTP {response.status} for {url}")
+
         headers = await response.all_headers()
         content_type = headers.get("content-type", "")
         if content_type and not _is_text_content_type(content_type):
@@ -120,6 +137,10 @@ class PlaywrightHtmlFetcher:
         return await page.content()
       finally:
         await page.close()
+        async with self._active_pages_lock:
+          self._active_pages -= 1
+          if self._active_pages == 0:
+            self._drained.set()
 
 
 PLAYWRIGHT_HTML_FETCHER = PlaywrightHtmlFetcher()

@@ -1,9 +1,13 @@
+from typing import Any, Callable, NotRequired, TypedDict
 from telegram import Bot
-from typing import TypedDict
 
 
 class DefaultToolKwargs(TypedDict):
   bot: Bot
   chat_id: int
   topic_id: int
-  reply_to_message_id: int
+  reply_to_message_id: int | None
+  openai_client: NotRequired[Any]
+  openai_image_model: NotRequired[str]
+  ai_username: NotRequired[str]
+  add_message_to_history: NotRequired[Callable[..., Any]]

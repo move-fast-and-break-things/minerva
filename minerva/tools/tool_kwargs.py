@@ -8,6 +8,5 @@ class DefaultToolKwargs(TypedDict):
   topic_id: int
   reply_to_message_id: int | None
   openai_client: NotRequired[Any]
-  openai_image_model: NotRequired[str]
   ai_username: NotRequired[str]
   add_message_to_history: NotRequired[Callable[..., Any]]

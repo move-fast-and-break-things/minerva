@@ -19,17 +19,17 @@ jobs:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
       - name: Deploy
         env:
-          DEPLOY_HOST: '${{ secrets.DEPLOY_HOST }}'
-          OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}'
-          TELEGRAM_BOT_TOKEN: '${{ secrets.TELEGRAM_BOT_TOKEN }}'
-          TELEGRAM_CHAT_ID: '${{ secrets.TELEGRAM_CHAT_ID }}'
-          CALENDAR_ICS_URL: '${{ secrets.CALENDAR_ICS_URL }}'
+          DEPLOY_HOST: "${{ secrets.DEPLOY_HOST }}"
+          OPENAI_API_KEY: "${{ secrets.OPENAI_API_KEY }}"
+          TELEGRAM_BOT_TOKEN: "${{ secrets.TELEGRAM_BOT_TOKEN }}"
+          TELEGRAM_CHAT_ID: "${{ secrets.TELEGRAM_CHAT_ID }}"
+          CALENDAR_ICS_URL: "${{ secrets.CALENDAR_ICS_URL }}"
         run: |
           echo "${DEPLOY_HOST} ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBHw/OVpri5hfX3JP6XdcVTZYfDXhVhoZ3PtdB1Uc3Kx604uTSfXe/+N0QPCeWwWP6dUbmGDCP0nXTHoH7uUqjOc=" >> ~/.ssh/known_hosts
           docker context create --docker "host=ssh://root@${DEPLOY_HOST}" --description "deploy server" "mfabt.club"
           echo "" > .env
           echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
-          echo "OPENAI_MODEL=gpt-5-2025-08-07" >> .env
+          echo "OPENAI_MODEL=gpt-5.4" >> .env
           echo "TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}" >> .env
           echo "TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}" >> .env
           echo "CALENDAR_ICS_URL=${CALENDAR_ICS_URL}" >> .env

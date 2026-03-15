@@ -22,7 +22,6 @@ class ChatSession:
     ai_username: str,
     openai_client: AsyncOpenAI,
     openai_model_name: str,
-    openai_image_model_name: str,
     max_completion_tokens: int,
     max_history_tokens: int,
     max_create_response_retry_count: int,
@@ -44,7 +43,6 @@ class ChatSession:
     self.max_tool_response_tokens = max_tool_response_tokens
     self.tools: dict[str, GenericToolFn] = tools
     self.openai_client = openai_client
-    self.openai_image_model_name = openai_image_model_name
 
     self.llm_session = LlmSession(
       ai_username=ai_username,
@@ -163,7 +161,6 @@ class ChatSession:
             topic_id=self.topic_id,
             reply_to_message_id=reply_to_message_id,
             openai_client=self.openai_client,
-            openai_image_model=self.openai_image_model_name,
             ai_username=self.ai_username,
             add_message_to_history=self.add_message,
           )

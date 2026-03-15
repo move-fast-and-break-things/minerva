@@ -114,7 +114,7 @@ async def test_generate_image():
 
   call = openai_client.images.calls[0]
   assert call["prompt"] == "red square"
-  assert call["model"] == "gpt-image-1"
+  assert call["model"] == "gpt-image-1.5"
   assert call["size"] == "1024x1024"
   assert call["output_format"] == "png"
 

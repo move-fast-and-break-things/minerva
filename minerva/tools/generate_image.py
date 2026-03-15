@@ -7,7 +7,7 @@ from telegram import InputFile
 from minerva.message_history import Image, ImageContent, Message
 from minerva.tools.tool_kwargs import DefaultToolKwargs
 
-DEFAULT_IMAGE_MODEL = "gpt-image-1"
+DEFAULT_IMAGE_MODEL = "gpt-image-1.5"
 DEFAULT_IMAGE_SIZE = "1024x1024"
 DEFAULT_IMAGE_FORMAT = "png"
 IMAGE_DOWNLOAD_TIMEOUT_SEC = 10

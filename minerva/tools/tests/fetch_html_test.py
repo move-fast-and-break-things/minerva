@@ -76,6 +76,7 @@ async def test_close_fetch_html_browser_calls_fetcher_close(monkeypatch: pytest.
 @pytest.mark.asyncio
 async def test_page_is_closed_on_content_type_error(monkeypatch: pytest.MonkeyPatch):
   mock_response = AsyncMock()
+  mock_response.ok = True
   mock_response.all_headers = AsyncMock(return_value={"content-type": "application/pdf"})
 
   mock_page = AsyncMock()
@@ -83,11 +84,6 @@ async def test_page_is_closed_on_content_type_error(monkeypatch: pytest.MonkeyPa
 
   mock_browser = AsyncMock()
   mock_browser.new_page = AsyncMock(return_value=mock_page)
-
-  monkeypatch.setattr(
-    "minerva.tools.fetch_html._get_playwright_api",
-    lambda: (None, Exception, Exception),
-  )
 
   fetcher = PlaywrightHtmlFetcher()
   monkeypatch.setattr(fetcher, "_ensure_browser", AsyncMock(return_value=mock_browser))

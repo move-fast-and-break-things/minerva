@@ -1,9 +1,13 @@
 import asyncio
-from functools import lru_cache
-from typing import Any, Callable, Unpack
+from typing import Unpack
 import lxml
 import lxml.html
 from lxml.html import clean
+from playwright.async_api import (
+  Error as PlaywrightError,
+  TimeoutError as PlaywrightTimeoutError,
+  async_playwright,
+)
 
 from minerva.tools.tool_kwargs import DefaultToolKwargs  # type: ignore
 
@@ -31,22 +35,6 @@ LXML_CLEANER = clean.Cleaner(
 )
 
 
-@lru_cache(maxsize=1)
-def _get_playwright_api() -> tuple[Callable[[], Any], type[Exception], type[Exception]]:
-  try:
-    from playwright.async_api import (
-      Error as PlaywrightError,
-      TimeoutError as PlaywrightTimeoutError,
-      async_playwright,
-    )
-  except ModuleNotFoundError as err:
-    raise RuntimeError(
-      "Playwright is not installed. Install dependencies and run `poetry run playwright install chromium`."
-    ) from err
-
-  return async_playwright, PlaywrightError, PlaywrightTimeoutError
-
-
 def _is_text_content_type(content_type: str) -> bool:
   normalized = content_type.lower()
   return normalized.startswith("text/") or "application/xhtml+xml" in normalized
@@ -58,11 +46,6 @@ class PlaywrightHtmlFetcher:
     self._startup_lock = asyncio.Lock()
     self._browser = None
     self._playwright = None
-    self._closing = False
-    self._active_pages = 0
-    self._active_pages_lock = asyncio.Lock()
-    self._drained = asyncio.Event()
-    self._drained.set()
 
   async def _ensure_browser(self):
     if self._browser is not None:
@@ -72,7 +55,6 @@ class PlaywrightHtmlFetcher:
       if self._browser is not None:
         return self._browser
 
-      async_playwright, _, _ = _get_playwright_api()
       pw = await async_playwright().start()
       try:
         browser = await pw.chromium.launch(headless=True)
@@ -84,38 +66,22 @@ class PlaywrightHtmlFetcher:
       return self._browser
 
   async def close(self):
-    self._closing = True
-    await self._drained.wait()
-    async with self._startup_lock:
-      if self._browser is not None:
-        await self._browser.close()
-        self._browser = None
-      if self._playwright is not None:
-        await self._playwright.stop()
-        self._playwright = None
+    if self._browser is not None:
+      await self._browser.close()
+    if self._playwright is not None:
+      await self._playwright.stop()
 
   async def fetch_rendered_html(self, url: str) -> str:
-    if self._closing:
-      raise RuntimeError("Fetcher is shutting down")
-
     browser = await self._ensure_browser()
-    _, playwright_error, playwright_timeout_error = _get_playwright_api()
-
-    async with self._active_pages_lock:
-      self._active_pages += 1
-      self._drained.clear()
 
     async with self._tabs_semaphore:
       page = await browser.new_page(user_agent=MINERVA_USER_AGENT)
       try:
-        try:
-          response = await page.goto(
-            url,
-            wait_until="domcontentloaded",
-            timeout=NAVIGATION_TIMEOUT_MS,
-          )
-        except playwright_error as err:
-          raise ValueError(f"Failed to load page {url}: {err}") from err
+        response = await page.goto(
+          url,
+          wait_until="domcontentloaded",
+          timeout=NAVIGATION_TIMEOUT_MS,
+        )
 
         if response is None:
           raise ValueError("Failed to load page: empty browser response")
@@ -131,16 +97,14 @@ class PlaywrightHtmlFetcher:
         try:
           # Dynamic websites may still be hydrating after DOM content is loaded.
           await page.wait_for_load_state("networkidle", timeout=NETWORK_IDLE_TIMEOUT_MS)
-        except playwright_timeout_error:
+        except PlaywrightTimeoutError:
           pass
 
         return await page.content()
+      except PlaywrightError as err:
+        raise ValueError(f"Failed to load page {url}: {err}") from err
       finally:
         await page.close()
-        async with self._active_pages_lock:
-          self._active_pages -= 1
-          if self._active_pages == 0:
-            self._drained.set()
 
 
 PLAYWRIGHT_HTML_FETCHER = PlaywrightHtmlFetcher()

@@ -114,7 +114,7 @@ async def test_generate_image():
 
   call = openai_client.images.calls[0]
   assert call["prompt"] == "red square"
-  assert call["model"] == "gpt-image-1"
+  assert call["model"] == "gpt-image-1.5"
   assert call["size"] == "1024x1024"
   assert call["output_format"] == "png"
 
@@ -141,7 +141,9 @@ async def test_generate_image_fails_when_b64_json_is_missing():
 
 
 @pytest.mark.asyncio
-async def test_generate_image_downloads_image_when_only_url_is_returned(monkeypatch: pytest.MonkeyPatch):
+async def test_generate_image_downloads_image_when_only_url_is_returned(
+  monkeypatch: pytest.MonkeyPatch,
+):
   response = SimpleNamespace(
     data=[SimpleNamespace(b64_json=None, url="https://example.com/image.png")],
   )
@@ -170,7 +172,9 @@ async def test_generate_image_downloads_image_when_only_url_is_returned(monkeypa
 
 
 @pytest.mark.asyncio
-async def test_generate_image_url_fallback_uses_content_type_for_format(monkeypatch: pytest.MonkeyPatch):
+async def test_generate_image_url_fallback_uses_content_type_for_format(
+  monkeypatch: pytest.MonkeyPatch,
+):
   response = SimpleNamespace(
     data=[SimpleNamespace(b64_json=None, url="https://example.com/image.jpg")],
   )

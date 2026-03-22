@@ -6,8 +6,8 @@ from telegram import InputFile
 
 from minerva.message_history import Image, ImageContent, Message
 from minerva.tools.tool_kwargs import DefaultToolKwargs
+from minerva.config import OPENAI_IMAGE_MODEL
 
-DEFAULT_IMAGE_MODEL = "gpt-image-1"
 DEFAULT_IMAGE_SIZE = "1024x1024"
 DEFAULT_IMAGE_FORMAT = "png"
 IMAGE_DOWNLOAD_TIMEOUT_SEC = 10
@@ -134,8 +134,7 @@ async def generate_image(description: str, **kwargs: Unpack[DefaultToolKwargs]) 
   """
 
   openai_client, ai_username, add_message_to_history = _get_required_runtime_data(kwargs)
-  image_model = kwargs.get("openai_image_model", DEFAULT_IMAGE_MODEL)
-  first_image = await _request_image(openai_client, description, image_model)
+  first_image = await _request_image(openai_client, description, OPENAI_IMAGE_MODEL)
   image_bytes, image_b64, image_format = await _resolve_image_data(first_image)
 
   filename = f"generated-image.{image_format}"

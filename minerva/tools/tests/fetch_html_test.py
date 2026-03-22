@@ -92,3 +92,41 @@ async def test_page_is_closed_on_content_type_error(monkeypatch: pytest.MonkeyPa
     await fetcher.fetch_rendered_html("https://example.com/file.pdf")
 
   mock_page.close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_raises_on_http_error_status(monkeypatch: pytest.MonkeyPatch):
+  mock_response = AsyncMock()
+  mock_response.ok = False
+  mock_response.status = 404
+
+  mock_page = AsyncMock()
+  mock_page.goto = AsyncMock(return_value=mock_response)
+
+  mock_browser = AsyncMock()
+  mock_browser.new_page = AsyncMock(return_value=mock_page)
+
+  fetcher = PlaywrightHtmlFetcher()
+  monkeypatch.setattr(fetcher, "_ensure_browser", AsyncMock(return_value=mock_browser))
+
+  with pytest.raises(ValueError, match="HTTP 404"):
+    await fetcher.fetch_rendered_html("https://example.com/not-found")
+
+  mock_page.close.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_raises_on_empty_browser_response(monkeypatch: pytest.MonkeyPatch):
+  mock_page = AsyncMock()
+  mock_page.goto = AsyncMock(return_value=None)
+
+  mock_browser = AsyncMock()
+  mock_browser.new_page = AsyncMock(return_value=mock_page)
+
+  fetcher = PlaywrightHtmlFetcher()
+  monkeypatch.setattr(fetcher, "_ensure_browser", AsyncMock(return_value=mock_browser))
+
+  with pytest.raises(ValueError, match="empty browser response"):
+    await fetcher.fetch_rendered_html("https://example.com")
+
+  mock_page.close.assert_awaited_once()

@@ -128,7 +128,7 @@ async def generate_image(description: str, aspect: Aspect = "square",**kwargs: U
 
   Args:
     description: A detailed image description.
-    format: The aspect ratio of the generated image. Should be "square", "portrait", or "landscape".
+    aspect: The aspect ratio of the generated image. Should be "square", "portrait", or "landscape".
 
   If user asks for an unsupported format, choose the closest one and inform the user about it in the response.
   """

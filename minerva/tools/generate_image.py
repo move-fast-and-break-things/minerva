@@ -104,8 +104,9 @@ def _add_generated_image_to_history(
   ai_username: str,
   image_b64: str,
   image_format: str,
+  aspect: Aspect,
 ) -> None:
-  width_px, height_px = aspects[DEFAULT_IMAGE_ASPECT]
+  width_px, height_px = aspects.get(aspect, aspects[DEFAULT_IMAGE_ASPECT])
   image_data_uri = f"data:image/{image_format};base64,{image_b64}"
   add_message_to_history(
     Message(
@@ -123,7 +124,7 @@ def _add_generated_image_to_history(
     )
   )
 
-async def generate_image(description: str, aspect: Aspect = "square",**kwargs: Unpack[DefaultToolKwargs]) -> str:
+async def generate_image(description: str, aspect: Aspect = "square", **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Generate an image using OpenAI and send it to the chat as photo + original file.
 
   Args:
@@ -139,6 +140,6 @@ async def generate_image(description: str, aspect: Aspect = "square",**kwargs: U
 
   filename = f"generated-image.{image_format}"
   await _send_generated_image_to_telegram(kwargs, filename, image_bytes)
-  _add_generated_image_to_history(add_message_to_history, ai_username, image_b64, image_format)
+  _add_generated_image_to_history(add_message_to_history, ai_username, image_b64, image_format, aspect)
 
   return f"sent:{filename}:{len(image_bytes)}"

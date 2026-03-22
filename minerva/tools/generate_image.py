@@ -12,9 +12,9 @@ DEFAULT_IMAGE_ASPECT = "square"
 DEFAULT_IMAGE_FORMAT = "png"
 IMAGE_DOWNLOAD_TIMEOUT_SEC = 10
 
-type Format = Literal["square", "portrait", "landscape"]
+type Aspect = Literal["square", "portrait", "landscape"]
 
-formats = {
+aspects = {
     "square": (1024, 1024),
     "portrait": (1024, 1536),
     "landscape": (1536, 1024),
@@ -39,11 +39,11 @@ def _get_required_runtime_data(
 
 
 
-async def _request_image(openai_client: Any, description: str, format: Format, image_model: str) -> Any:
+async def _request_image(openai_client: Any, description: str, aspect: Aspect, image_model: str) -> Any:
   response = await openai_client.images.generate(
     model=image_model,
     prompt=description,
-    size=f"{'x'.join(map(str, formats.get(format, formats[DEFAULT_IMAGE_ASPECT])))}",
+    size=f"{'x'.join(map(str, aspects.get(aspect, aspects[DEFAULT_IMAGE_ASPECT])))}",
     output_format=DEFAULT_IMAGE_FORMAT,
   )
   if not response.data:
@@ -105,7 +105,7 @@ def _add_generated_image_to_history(
   image_b64: str,
   image_format: str,
 ) -> None:
-  width_px, height_px = formats[DEFAULT_IMAGE_ASPECT]
+  width_px, height_px = aspects[DEFAULT_IMAGE_ASPECT]
   image_data_uri = f"data:image/{image_format};base64,{image_b64}"
   add_message_to_history(
     Message(
@@ -123,22 +123,18 @@ def _add_generated_image_to_history(
     )
   )
 
-async def generate_image(description: str, format: Format = "square",**kwargs: Unpack[DefaultToolKwargs]) -> str:
+async def generate_image(description: str, aspect: Aspect = "square",**kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Generate an image using OpenAI and send it to the chat as photo + original file.
 
   Args:
     description: A detailed image description.
-    format: The aspect ratio of the generated image. "square", "portrait", or "landscape".
-  where:
-    "square": 1024x1024,
-    "portrait": 1024x1536,
-    "landscape": 1536x1024,
+    format: The aspect ratio of the generated image. Should be "square", "portrait", or "landscape".
 
   If user asks for an unsupported format, choose the closest one and inform the user about it in the response.
   """
 
   openai_client, ai_username, add_message_to_history = _get_required_runtime_data(kwargs)
-  first_image = await _request_image(openai_client, description, format, OPENAI_IMAGE_MODEL)
+  first_image = await _request_image(openai_client, description, aspect, OPENAI_IMAGE_MODEL)
   image_bytes, image_b64, image_format = await _resolve_image_data(first_image)
 
   filename = f"generated-image.{image_format}"

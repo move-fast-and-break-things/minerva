@@ -130,7 +130,7 @@ async def generate_image(description: str, aspect: Aspect = "square",**kwargs: U
     description: A detailed image description.
     aspect: The aspect ratio of the generated image. Should be "square", "portrait", or "landscape".
 
-  If the user asks for an unsupported aspect ratio, choose the closest supported one and inform the user about it in the response.
+  If the user asks for a specific resolution, choose the closest aspect and inform the user about what you did in the response.
   """
 
   openai_client, ai_username, add_message_to_history = _get_required_runtime_data(kwargs)

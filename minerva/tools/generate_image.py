@@ -12,7 +12,7 @@ DEFAULT_IMAGE_ASPECT = "square"
 DEFAULT_IMAGE_FORMAT = "png"
 IMAGE_DOWNLOAD_TIMEOUT_SEC = 10
 
-type Aspect = Literal["square", "portrait", "landscape"]
+Aspect = Literal["square", "portrait", "landscape"]
 
 aspects = {
     "square": (1024, 1024),

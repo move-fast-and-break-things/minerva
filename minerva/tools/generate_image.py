@@ -127,7 +127,7 @@ def _add_generated_image_to_history(
   )
 
 
-async def generate_image(description: str, aspect: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
+async def generate_image(description: str, aspect: str = "square", **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Generate an image using OpenAI and send it to the chat as photo + original file.
 
   Args:

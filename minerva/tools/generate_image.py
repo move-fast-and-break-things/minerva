@@ -14,11 +14,12 @@ IMAGE_DOWNLOAD_TIMEOUT_SEC = 10
 
 Aspect = Literal["square", "portrait", "landscape"]
 
-aspects = {
-    "square": (1024, 1024),
-    "portrait": (1024, 1536),
-    "landscape": (1536, 1024),
+aspects: dict[Aspect, tuple[int, int]] = {
+  "square": (1024, 1024),
+  "portrait": (1024, 1536),
+  "landscape": (1536, 1024),
 }
+
 
 def _get_required_runtime_data(
   kwargs: DefaultToolKwargs,
@@ -38,8 +39,9 @@ def _get_required_runtime_data(
   return openai_client, ai_username, add_message_to_history
 
 
-
-async def _request_image(openai_client: Any, description: str, aspect: Aspect, image_model: str) -> Any:
+async def _request_image(
+  openai_client: Any, description: str, aspect: Aspect, image_model: str
+) -> Any:
   response = await openai_client.images.generate(
     model=image_model,
     prompt=description,
@@ -124,7 +126,8 @@ def _add_generated_image_to_history(
     )
   )
 
-async def generate_image(description: str, aspect: Aspect = "square", **kwargs: Unpack[DefaultToolKwargs]) -> str:
+
+async def generate_image(description: str, aspect: str, **kwargs: Unpack[DefaultToolKwargs]) -> str:
   """Generate an image using OpenAI and send it to the chat as photo + original file.
 
   Args:
@@ -133,6 +136,10 @@ async def generate_image(description: str, aspect: Aspect = "square", **kwargs: 
 
   If the user asks for a specific resolution, choose the closest aspect and inform the user about what you did in the response.
   """
+  if aspect not in aspects:
+    raise ValueError(
+      f"Invalid aspect ratio {aspect!r}. Must be one of: {', '.join(aspects.keys())}"
+    )
 
   openai_client, ai_username, add_message_to_history = _get_required_runtime_data(kwargs)
   first_image = await _request_image(openai_client, description, aspect, OPENAI_IMAGE_MODEL)
@@ -140,6 +147,8 @@ async def generate_image(description: str, aspect: Aspect = "square", **kwargs: 
 
   filename = f"generated-image.{image_format}"
   await _send_generated_image_to_telegram(kwargs, filename, image_bytes)
-  _add_generated_image_to_history(add_message_to_history, ai_username, image_b64, image_format, aspect)
+  _add_generated_image_to_history(
+    add_message_to_history, ai_username, image_b64, image_format, aspect
+  )
 
   return f"sent:{filename}:{len(image_bytes)}"

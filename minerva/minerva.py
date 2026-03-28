@@ -107,6 +107,7 @@ class Minerva:
     if not update.my_chat_member:
       return
 
+    print(update.my_chat_member.chat.id)
     if update.my_chat_member.chat.id == self.chat_id:
       return
 
@@ -131,6 +132,7 @@ class Minerva:
     if not message.from_user:
       raise ValueError("Unexpected: message.from_user is None")
 
+    print(message.chat_id)
     if message.chat.id != self.chat_id:
       await message.reply_text("I'm sorry, I can't talk to you here.")
       if message.chat.type != ChatType.PRIVATE:

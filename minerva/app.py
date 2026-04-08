@@ -1,3 +1,5 @@
+from typing import cast
+
 from minerva.config import (
   AI_NAME,
   OPENAI_API_KEY,
@@ -38,9 +40,20 @@ def main():
       openai_model=OPENAI_MODEL,
     )
     await minerva.initialize()
+    application.bot_data["minerva"] = minerva
+
+  async def shutdown_minerva(application: Application) -> None:
+    minerva = cast(Minerva | None, application.bot_data.get("minerva"))
+    if minerva is None:
+      return
+    await minerva.shutdown()
 
   application = (
-    Application.builder().token(TELEGRAM_BOT_TOKEN).post_init(initialize_minerva).build()
+    Application.builder()
+    .token(TELEGRAM_BOT_TOKEN)
+    .post_init(initialize_minerva)
+    .post_shutdown(shutdown_minerva)
+    .build()
   )
   application.run_polling(allowed_updates=[Update.MESSAGE, Update.MY_CHAT_MEMBER])
 

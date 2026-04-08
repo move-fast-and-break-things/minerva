@@ -22,7 +22,7 @@ from minerva.get_image_from_telegram_photo import get_image_from_telegram_photo
 from minerva.config import AI_NAME, CALENDAR_ICS_URL
 from minerva.message_history import ImageContent, Message
 from minerva.prompt import USERNAMELESS_ID_PREFIX, Prompt
-from minerva.tools.fetch_html import fetch_html
+from minerva.tools.fetch_html import close_fetch_html_browser, fetch_html
 from minerva.tools.generate_image import generate_image
 from minerva.tools.send_text_file import send_text_file
 from minerva.tool_utils import GenericToolFn, format_tool_username
@@ -102,6 +102,9 @@ class Minerva:
     print(
       f"Minerva is ready to chat in chat {self.chat_id}. Minerva username is {self.me.username}."
     )
+
+  async def shutdown(self) -> None:
+    await close_fetch_html_browser()
 
   async def on_chat_member_update(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.my_chat_member:

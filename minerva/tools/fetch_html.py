@@ -48,12 +48,15 @@ class PlaywrightHtmlFetcher:
     self._playwright = None
 
   async def _ensure_browser(self):
-    if self._browser is not None:
+    if self._browser is not None and self._browser.is_connected():
       return self._browser
 
     async with self._startup_lock:
-      if self._browser is not None:
+      if self._browser is not None and self._browser.is_connected():
         return self._browser
+
+      if self._playwright is not None:
+        await self._playwright.stop()
 
       pw = await async_playwright().start()
       try:
@@ -79,14 +82,11 @@ class PlaywrightHtmlFetcher:
     async with self._tabs_semaphore:
       page = await browser.new_page(user_agent=MINERVA_USER_AGENT)
       try:
-        try:
-          response = await page.goto(
-            url,
-            wait_until="domcontentloaded",
-            timeout=NAVIGATION_TIMEOUT_MS,
-          )
-        except PlaywrightError as err:
-          raise ValueError(f"Failed to load page {url}: {err}") from err
+        response = await page.goto(
+          url,
+          wait_until="domcontentloaded",
+          timeout=NAVIGATION_TIMEOUT_MS,
+        )
 
         if response is None:
           raise ValueError("Failed to load page: empty browser response")
@@ -106,6 +106,8 @@ class PlaywrightHtmlFetcher:
           pass
 
         return await page.content()
+      except PlaywrightError as err:
+        raise ValueError(f"Failed to load page {url}: {err}") from err
       finally:
         await page.close()
 

@@ -24,7 +24,8 @@ from minerva.message_history import ImageContent, Message
 from minerva.prompt import USERNAMELESS_ID_PREFIX, Prompt
 from minerva.tools.fetch_html import close_fetch_html_browser, fetch_html
 from minerva.tools.generate_image import generate_image
-from minerva.tools.read_file import read_file
+from minerva.tools.read_pdf_file import read_pdf_file
+from minerva.tools.read_text_file import read_text_file
 from minerva.tools.send_text_file import send_text_file
 from minerva.tool_utils import GenericToolFn, format_tool_username
 
@@ -57,7 +58,8 @@ class Minerva:
       "fetch_html": fetch_html,
       "send_text_file": send_text_file,
       "generate_image": generate_image,
-      "read_file": read_file,
+      "read_text_file": read_text_file,
+      "read_pdf_file": read_pdf_file,
     }
 
     if CALENDAR_ICS_URL:

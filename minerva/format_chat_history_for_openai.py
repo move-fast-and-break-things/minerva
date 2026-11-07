@@ -1,4 +1,4 @@
-from minerva.message_history import MessageHistory
+from minerva.message_history import MessageHistory, PdfContent
 from minerva.tool_utils import TOOL_PREFIX
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat.chat_completion_content_part_param import ChatCompletionContentPartParam
@@ -24,6 +24,14 @@ def format_chat_history_for_openai(
     content: list[ChatCompletionContentPartParam] = []
     if isinstance(message.content, str):
       content = [{"type": "text", "text": message.content}]
+    elif isinstance(message.content, PdfContent):
+      content = [
+        {
+          "type": "file",
+          "file": {"filename": message.content.filename, "file_data": message.content.data_url},
+        },
+        {"type": "text", "text": message.content.text},
+      ]
     else:
       for image in message.content.images:
         content.append(

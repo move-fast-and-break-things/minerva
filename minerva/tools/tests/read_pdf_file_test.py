@@ -1,0 +1,59 @@
+import base64
+from io import BytesIO
+from typing import Any
+from unittest.mock import AsyncMock
+
+import pytest
+from pypdf import PdfReader, PdfWriter
+
+from minerva.message_history import Message, PdfContent
+from minerva.tools.read_pdf_file import read_pdf_file
+
+
+def get_tool_kwargs(page_count: int, history: list[Message]) -> dict[str, Any]:
+  writer = PdfWriter()
+  for _ in range(page_count):
+    writer.add_blank_page(width=612, height=792)
+  pdf = BytesIO()
+  writer.write(pdf)
+
+  file = AsyncMock()
+  file.download_as_bytearray.return_value = bytearray(pdf.getvalue())
+  bot = AsyncMock()
+  bot.get_file.return_value = file
+  return {
+    "bot": bot,
+    "chat_id": 1,
+    "topic_id": 2,
+    "reply_to_message_id": 3,
+    "ai_username": "minerva",
+    "add_message_to_history": history.append,
+  }
+
+
+@pytest.mark.asyncio
+async def test_read_pdf_file_adds_requested_pages_to_history():
+  history: list[Message] = []
+  kwargs = get_tool_kwargs(4, history)
+
+  result = await read_pdf_file("file-id", 2, 3, **kwargs)
+
+  assert result == "Added pages 2-3 of 4 to the conversation."
+  kwargs["bot"].get_file.assert_awaited_once_with("file-id")
+  [message] = history
+  assert message.author == "minerva"
+  assert isinstance(message.content, PdfContent)
+  assert message.content.page_count == 2
+  pdf = base64.b64decode(message.content.data_url.removeprefix("data:application/pdf;base64,"))
+  assert len(PdfReader(BytesIO(pdf)).pages) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("first_page, last_page", [(0, 1), (2, 1), (1, 9), (1, 6)])
+async def test_read_pdf_file_rejects_invalid_page_ranges(first_page: int, last_page: int):
+  history: list[Message] = []
+
+  with pytest.raises(ValueError):
+    await read_pdf_file("file-id", first_page, last_page, **get_tool_kwargs(8, history))
+
+  assert history == []

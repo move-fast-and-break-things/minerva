@@ -18,6 +18,7 @@ lxml = { extras = ["html-clean"], version = "^5.3.0" }
 icalendar = "^5.0.13"
 recurring-ical-events = "^3.2.0"
 playwright = "^1.54.0"
+pypdf = "^7.0.0"
 
 [tool.poetry.group.dev.dependencies]
 lxml-stubs = "^0.5.1"

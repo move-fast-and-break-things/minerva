@@ -9,9 +9,8 @@ def format_chat_history_for_openai(
 ) -> list[ChatCompletionMessageParam]:
   messages: list[ChatCompletionMessageParam] = [{"role": "system", "content": system_prompt}]
   for message in chat_history.history:
-    if message.author.startswith(TOOL_PREFIX):
-      if not isinstance(message.content, str):
-        raise Exception("Unexpected: tool response is not a string")
+    # File parts are only allowed in user messages, so only text tool responses go as system ones
+    if message.author.startswith(TOOL_PREFIX) and isinstance(message.content, str):
       messages.append(
         {
           "role": "system",

@@ -164,16 +164,17 @@ class ChatSession:
             ai_username=self.ai_username,
             add_message_to_history=self.add_message,
           )
-          # Ensure we won't blow up the conversation history with a huge tool response
-          truncated_tool_response = trim_by_token_size(
-            tool_response,
-            self.max_tool_response_tokens,
-            "...TRUNCATED",
-          )
+          if isinstance(tool_response, str):
+            # Ensure we won't blow up the conversation history with a huge tool response
+            tool_response = trim_by_token_size(
+              tool_response,
+              self.max_tool_response_tokens,
+              "...TRUNCATED",
+            )
           self.llm_session.add_message(
             Message(
               format_tool_username(tool_call.tool_name),
-              truncated_tool_response,
+              tool_response,
             )
           )
         except Exception as err:

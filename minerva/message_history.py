@@ -26,7 +26,17 @@ class ImageContent(NamedTuple):
   text: Optional[str] = None
 
 
-ContentType = Union[str, ImageContent]
+class PdfContent(NamedTuple):
+  data_url: str
+  filename: str
+  page_count: int
+  text: str
+
+
+ContentType = Union[str, ImageContent, PdfContent]
+
+# A pessimistic estimate: OpenAI passes the model both the image and the text of each PDF page
+PDF_PAGE_TOKEN_COUNT = 1500
 
 
 # It's a pessimistic image token size computation assuming the "auto" gpt-4o
@@ -41,6 +51,9 @@ def get_image_token_count(image: Image) -> int:
 def get_message_token_count(author: str, content: ContentType) -> int:
   if isinstance(content, str):
     return len(TOKENIZER.encode(f"{author}: {content}"))
+  elif isinstance(content, PdfContent):
+    text_tokens = len(TOKENIZER.encode(f"{author}: {content.text}"))
+    return text_tokens + content.page_count * PDF_PAGE_TOKEN_COUNT
   else:
     text_tokens = len(TOKENIZER.encode(f"{author}: {content.text or ''}"))
     image_tokens = sum(get_image_token_count(image) for image in content.images)

@@ -2,10 +2,12 @@ from inspect import signature, Parameter, Signature
 from typing import Any, Coroutine, NamedTuple, Callable, cast
 import pyparsing as pp
 
+from minerva.message_history import PdfContent
+
 
 TOOL_PREFIX = "TOOL-"
 
-GenericToolFn = Callable[..., Coroutine[Any, Any, str]]
+GenericToolFn = Callable[..., Coroutine[Any, Any, str | PdfContent]]
 
 
 def get_tool_signature(tool: GenericToolFn) -> Signature:

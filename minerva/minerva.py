@@ -24,6 +24,7 @@ from minerva.message_history import ImageContent, Message
 from minerva.prompt import USERNAMELESS_ID_PREFIX, Prompt
 from minerva.tools.fetch_html import close_fetch_html_browser, fetch_html
 from minerva.tools.generate_image import generate_image
+from minerva.tools.read_text_file import read_text_file
 from minerva.tools.send_text_file import send_text_file
 from minerva.tool_utils import GenericToolFn, format_tool_username
 
@@ -56,6 +57,7 @@ class Minerva:
       "fetch_html": fetch_html,
       "send_text_file": send_text_file,
       "generate_image": generate_image,
+      "read_text_file": read_text_file,
     }
 
     if CALENDAR_ICS_URL:
@@ -91,7 +93,9 @@ class Minerva:
 
     print("Starting Minerva with prompt:\n", self.prompt)
 
-    self.application.add_handler(MessageHandler(filters.TEXT | filters.PHOTO, self.on_message))
+    self.application.add_handler(
+      MessageHandler(filters.TEXT | filters.PHOTO | filters.Document.TXT, self.on_message)
+    )
     self.application.add_handler(
       ChatMemberHandler(
         self.on_chat_member_update,
@@ -127,8 +131,8 @@ class Minerva:
     if not message:
       return
 
-    if not message.text and not message.photo:
-      # Only text and photo messages are supported
+    if not message.text and not message.photo and not message.document:
+      # Only text, photo, and text file messages are supported
       return
 
     if not message.from_user:
@@ -165,6 +169,16 @@ class Minerva:
       # If the user uploads multiple photos in a single message, Telegram API
       # will emit different message events for them
       # TODO(yurij): wait for other photos here
+    elif message.document:
+      # Only reference the file to keep its content out of the context until
+      # Minerva decides to read it
+      history_message = Message(
+        author=message_author,
+        content=(
+          f"{message.caption or ''}\n"
+          f'[text file "{message.document.file_name}", file_id: {message.document.file_id}]'
+        ),
+      )
     else:
       raise ValueError("Unsupported message type")
 
